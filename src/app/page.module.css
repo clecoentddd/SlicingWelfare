@@ -1,0 +1,128 @@
+.container {
+  display: flex;
+  font-family: sans-serif;
+}
+
+.leftColumn {
+  flex: 1;
+  padding: 1rem;
+  border-right: 1px solid #ccc;
+}
+
+.rightColumn {
+  flex: 1;
+  padding: 1rem;
+}
+
+.heading {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.statusText {
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.btnCreate {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  margin: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btnIncome {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  margin: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btnExpense {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  margin: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btnCommit {
+  background-color: #fd7e14;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  margin: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btnCommit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pendingSection {
+  margin-top: 2rem;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.pendingTitle {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.pendingList {
+  list-style: none;
+  padding-left: 0;
+}
+
+.pendingItem {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  font-family: monospace;
+  color: #333;
+}
+
+.pendingItem strong {
+  color: #0056b3;
+  display: block;
+  font-size: 1rem;
+}
+
+.pendingItem span {
+  display: block;
+  font-size: 0.9rem;
+  margin-top: 4px;
+  color: #666;
+}
+
+.eventsTitle {
+  color: orange;
+  font-weight: bold;
+  margin-top: 2rem;
+}
+
+.eventItem {
+  background-color: #fef6e0;
+  border: 1px solid #f1c40f;
+  border-radius: 5px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}

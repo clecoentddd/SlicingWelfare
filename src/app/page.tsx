@@ -1,103 +1,114 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useMemo, useState } from "react";
+import { useDB, DBEvents } from "@/slices/shared/DBEvents";
+import { StoredEvent } from "@/slices/shared/genericTypes";
+import { createChangeHandler } from "@/slices/createChange/createChangeHandler";
+import { addIncomeCommand, addExpenseCommand } from "@/slices/commitChanges/addIncomesAndExpenses";
+import { openEventDB } from "@/utils/openEventDB";
+import styles from "./page.module.css";
+
+export default function Page() {
+  const dbEvents = useDB<StoredEvent>(DBEvents);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<StoredEvent[]>([]);
+
+  const latestChange = useMemo(() => {
+    return [...dbEvents].reverse().find(e => e.type === "ChangeCreated")?.payload ?? null;
+  }, [dbEvents]);
+
+  const handleCreateChange = async () => {
+    setError(null);
+    try {
+      const changeId = "0x" + Math.floor(Math.random() * 10000).toString(16);
+      await createChangeHandler(changeId, dbEvents);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleAddIncome = async () => {
+    if (!latestChange?.changeId) return;
+    const event = await addIncomeCommand(latestChange.changeId);
+    if (event) setPending((prev) => [...prev, event]);
+  };
+
+  const handleAddExpense = async () => {
+    if (!latestChange?.changeId) return;
+    const event = await addExpenseCommand(latestChange.changeId);
+    if (event) setPending((prev) => [...prev, event]);
+  };
+
+  const handleCommit = async () => {
+    if (pending.length === 0) return;
+
+    const db = await openEventDB();
+    const tx = db.transaction("events", "readwrite");
+    const store = tx.objectStore("events");
+
+    for (const ev of pending) {
+      await store.add(ev);
+    }
+    await tx.done;
+
+    DBEvents.append(pending);
+    setPending([]);
+  };
+
+  useEffect(() => {
+    async function loadEvents() {
+      const db = await openEventDB();
+      const stored = await db.getAll("events");
+      DBEvents.append(stored);
+    }
+    loadEvents();
+  }, []);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className={styles.container}>
+      <section className={styles.leftColumn}>
+        <h1 className={styles.heading}>Event Sourcing Demo</h1>
+        <h2>Change ID: {latestChange?.changeId ?? "None"}</h2>
+        <p className={styles.statusText}>Status: {latestChange?.status ?? "None"}</p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        <button className={styles.btnCreate} onClick={handleCreateChange}>Create Change</button>
+        <button className={styles.btnIncome} onClick={handleAddIncome}>+ Income</button>
+        <button className={styles.btnExpense} onClick={handleAddExpense}>+ Expense</button>
+        <button className={styles.btnCommit} onClick={handleCommit} disabled={pending.length === 0}>Commit</button>
+
+        {error && <p className={styles.error}>{error}</p>}
+
+        <div className={styles.pendingSection}>
+          <h3>Pending Events</h3>
+          {pending.length === 0 ? (
+            <p>No pending events.</p>
+          ) : (
+            <ul className={styles.pendingList}>
+              {pending.map((ev, i) => {
+                if (ev.type !== "IncomeAdded" && ev.type !== "ExpenseAdded") return null;
+                return (
+                  <li key={i}>
+                    <strong>{ev.payload.description}</strong> — CHF {ev.payload.amount} <br />
+                    {ev.payload.period.start.toString().slice(0, 10)} → {ev.payload.period.end.toString().slice(0, 10)}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        <h3 className={styles.eventsTitle}>All Events</h3>
+        {[...dbEvents].reverse().map((ev, idx) => (
+          <pre key={idx} className={styles.eventItem}>
+            {JSON.stringify(ev, null, 2)}
+          </pre>
+        ))}
+      </section>
+
+      <section className={styles.rightColumn}>
+        <h2>Right Column</h2>
+        <p>More UI coming soon…</p>
+      </section>
+    </main>
   );
 }
