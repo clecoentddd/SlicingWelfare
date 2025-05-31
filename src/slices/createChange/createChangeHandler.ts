@@ -5,6 +5,7 @@ import { DBEvents } from "../shared/DBEvents";
 
 export async function createChangeHandler(changeId: string, allEvents: StoredEvent[]) {
   const aggregate = new ChangeAggregate();
+  console.log("Creating change with ID:", changeId);
   allEvents.forEach(e => aggregate.apply(e));
 
   if (!aggregate.canCreate()) {

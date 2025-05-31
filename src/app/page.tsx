@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useDB, DBEvents } from "@/slices/shared/DBEvents";
-import { StoredEvent } from "@/slices/shared/genericTypes";
-import { createChangeHandler } from "@/slices/createChange/createChangeHandler";
-import { addIncomeCommand, addExpenseCommand } from "@/slices/commitChanges/addIncomesAndExpenses";
-import { openEventDB } from "@/utils/openEventDB";
-import styles from "./page.module.css";
+import { useDB, DBEvents } from "../slices/shared/DBEvents";
+import { StoredEvent } from "../slices/shared/genericTypes";
+import { createChangeHandler } from "../slices/createChange/createChangeHandler";
+import { addIncomeCommand, addExpenseCommand } from "../slices/commitChanges/addIncomesAndExpenses";
+import { openEventDB } from "../utils/openEventDB";
+import { startProjectionListener } from "../slices/viewResources/projectionHandler";
+import styles  from "./page.module.css";
+import ProjectionPanel from "../slices/viewResources/projectionPanel";
+
+// then inside return
 
 export default function Page() {
   const dbEvents = useDB<StoredEvent>(DBEvents);
@@ -49,7 +53,11 @@ export default function Page() {
     for (const ev of pending) {
       await store.add(ev);
     }
-    await tx.done;
+
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve(undefined);
+      tx.onerror = () => reject(tx.error);
+    });
 
     DBEvents.append(pending);
     setPending([]);
@@ -62,6 +70,7 @@ export default function Page() {
       DBEvents.append(stored);
     }
     loadEvents();
+    startProjectionListener(); // 🔁 Start projection listener
   }, []);
 
   return (
@@ -79,17 +88,19 @@ export default function Page() {
         {error && <p className={styles.error}>{error}</p>}
 
         <div className={styles.pendingSection}>
-          <h3>Pending Events</h3>
+          <h3 className={styles.pendingTitle}>Pending Events</h3>
           {pending.length === 0 ? (
-            <p>No pending events.</p>
+            <p className={styles.noPending}>No pending events.</p>
           ) : (
             <ul className={styles.pendingList}>
               {pending.map((ev, i) => {
                 if (ev.type !== "IncomeAdded" && ev.type !== "ExpenseAdded") return null;
                 return (
-                  <li key={i}>
-                    <strong>{ev.payload.description}</strong> — CHF {ev.payload.amount} <br />
-                    {ev.payload.period.start.toString().slice(0, 10)} → {ev.payload.period.end.toString().slice(0, 10)}
+                  <li className={styles.pendingItem} key={i}>
+                    <strong>{ev.payload.description}</strong> — CHF {ev.payload.amount}
+                    <span>
+                      {ev.payload.period.start.toString().slice(0, 10)} → {ev.payload.period.end.toString().slice(0, 10)}
+                    </span>
                   </li>
                 );
               })}
@@ -106,8 +117,11 @@ export default function Page() {
       </section>
 
       <section className={styles.rightColumn}>
-        <h2>Right Column</h2>
-        <p>More UI coming soon…</p>
+        <h1>Projection View</h1>
+        <section className={styles.rightColumn}>
+          <ProjectionPanel />
+        </section>
+
       </section>
     </main>
   );
