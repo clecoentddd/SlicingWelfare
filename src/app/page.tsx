@@ -1,89 +1,109 @@
+// src/app/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useDB, DBEvents } from "../slices/shared/DBEvents";
 import { StoredEvent } from "../slices/shared/genericTypes";
-import { createChangeHandler } from "../slices/createChange/createChangeHandler";
-import { addIncomeCommand, addExpenseCommand } from "../slices/commitChanges/addIncomesAndExpenses";
-import { openEventDB } from "../utils/openEventDB";
-import { startProjectionListener } from "../slices/viewResources/projectionHandler";
-import styles  from "./page.module.css";
-import ProjectionPanel from "../slices/viewResources/projectionPanel";
+import { createChangeHandler } from "../slices/01_createChange/createChangeHandler";
+import { addIncomeCommand, addExpenseCommand } from "../slices/02_commitChanges/addIncomesAndExpenses";
+import { handlePushCommand } from "../slices/04_PushChange/handlePushCommand";
+import { handleCommitChanges } from "../slices/02_commitChanges/handleCommitChanges";
+import { openEventDB } from "../slices/shared/openEventDB";
+import { startProjectionListener } from "../slices/03_viewResources/projectionHandler";
+import styles from "./page.module.css";
+import ProjectionPanel from "../slices/03_viewResources/projectionPanel";
+import { getChangeStatus } from "../slices/shared/getStatus";
 
-// then inside return
+async function fetchEvents(): Promise<StoredEvent[]> {
+  const db = await openEventDB();
+  return await db.getAll("events");
+}
+
+
+
 
 export default function Page() {
-  const dbEvents = useDB<StoredEvent>(DBEvents);
+  const [dbEvents, setDbEvents] = useState<StoredEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<StoredEvent[]>([]);
+  const [changeId, setChangeId] = useState<string | null>(null);
 
-  const latestChange = useMemo(() => {
-    return [...dbEvents].reverse().find(e => e.type === "ChangeCreated")?.payload ?? null;
-  }, [dbEvents]);
+  const loadEvents = async () => {
+    const events = await fetchEvents();
+    setDbEvents(events);
+
+    const latestChangeEvent = events.reverse().find(e => e.type === "ChangeCreated");
+    if (latestChangeEvent) {
+      setChangeId(latestChangeEvent.payload.changeId);
+    }
+  };
+
+  const latestChangeStatus = useMemo(() => {
+    return getChangeStatus(dbEvents, changeId);
+  }, [dbEvents, changeId]);
 
   const handleCreateChange = async () => {
     setError(null);
     try {
-      const changeId = "0x" + Math.floor(Math.random() * 10000).toString(16);
-      await createChangeHandler(changeId, dbEvents);
+      const { changeId: newChangeId } = await createChangeHandler();
+      setChangeId(newChangeId);
+      await loadEvents();
     } catch (err: any) {
       setError(err.message);
     }
   };
 
   const handleAddIncome = async () => {
-    if (!latestChange?.changeId) return;
-    const event = await addIncomeCommand(latestChange.changeId);
+    if (!changeId) return;
+    const event = await addIncomeCommand(changeId);
     if (event) setPending((prev) => [...prev, event]);
   };
 
   const handleAddExpense = async () => {
-    if (!latestChange?.changeId) return;
-    const event = await addExpenseCommand(latestChange.changeId);
+    if (!changeId) return;
+    const event = await addExpenseCommand(changeId);
     if (event) setPending((prev) => [...prev, event]);
   };
 
   const handleCommit = async () => {
-    if (pending.length === 0) return;
-
-    const db = await openEventDB();
-    const tx = db.transaction("events", "readwrite");
-    const store = tx.objectStore("events");
-
-    for (const ev of pending) {
-      await store.add(ev);
+    try {
+      await handleCommitChanges(pending, changeId);
+      await loadEvents();
+      setPending([]);
+    } catch (err: any) {
+      setError(err.message);
     }
+  };
 
-    await new Promise((resolve, reject) => {
-      tx.oncomplete = () => resolve(undefined);
-      tx.onerror = () => reject(tx.error);
-    });
-
-    DBEvents.append(pending);
-    setPending([]);
+  const handlePush = async () => {
+    if (!changeId) {
+      setError("No change ID available to push changes.");
+      return;
+    }
+    try {
+      await handlePushCommand(changeId);
+      await loadEvents();
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   useEffect(() => {
-    async function loadEvents() {
-      const db = await openEventDB();
-      const stored = await db.getAll("events");
-      DBEvents.append(stored);
-    }
     loadEvents();
-    startProjectionListener(); // 🔁 Start projection listener
+    startProjectionListener();
   }, []);
 
   return (
     <main className={styles.container}>
       <section className={styles.leftColumn}>
         <h1 className={styles.heading}>Event Sourcing Demo</h1>
-        <h2>Change ID: {latestChange?.changeId ?? "None"}</h2>
-        <p className={styles.statusText}>Status: {latestChange?.status ?? "None"}</p>
+        <h2>Change ID: {changeId ?? "None"}</h2>
+        <p className={styles.statusText}>Status: {latestChangeStatus}</p>
 
         <button className={styles.btnCreate} onClick={handleCreateChange}>Create Change</button>
         <button className={styles.btnIncome} onClick={handleAddIncome}>+ Income</button>
         <button className={styles.btnExpense} onClick={handleAddExpense}>+ Expense</button>
         <button className={styles.btnCommit} onClick={handleCommit} disabled={pending.length === 0}>Commit</button>
+        <button className={styles.btnPush} onClick={handlePush}>Push Changes</button>
 
         {error && <p className={styles.error}>{error}</p>}
 
@@ -109,19 +129,20 @@ export default function Page() {
         </div>
 
         <h3 className={styles.eventsTitle}>All Events</h3>
-        {[...dbEvents].reverse().map((ev, idx) => (
-          <pre key={idx} className={styles.eventItem}>
-            {JSON.stringify(ev, null, 2)}
-          </pre>
-        ))}
+        {dbEvents.length === 0 ? (
+          <p>No events to display.</p>
+        ) : (
+          dbEvents.map((ev, idx) => (
+            <pre key={idx} className={styles.eventItem}>
+              {JSON.stringify(ev, null, 2)}
+            </pre>
+          ))
+        )}
       </section>
 
       <section className={styles.rightColumn}>
         <h1>Projection View</h1>
-        <section className={styles.rightColumn}>
-          <ProjectionPanel />
-        </section>
-
+        <ProjectionPanel />
       </section>
     </main>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { openResourceDB } from "../../slices/viewResources/openResourceDB";
+import { openResourceDB } from "../../slices/03_viewResources/openResourceDB";
 
 type ResourceRow = {
   month: string;

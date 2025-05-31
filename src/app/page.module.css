@@ -64,6 +64,16 @@
   cursor: pointer;
 }
 
+.btnPush {
+  background-color: #14edfd;
+  color: black;
+  border: none;
+  padding: 8px 16px;
+  margin: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
 .btnCommit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
