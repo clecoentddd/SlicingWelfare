@@ -2,7 +2,7 @@
 
 // src/config/dbConstants.ts
 const RESOURCE_DB_NAME = "ResourceDB";
-const RESOURCE_DB_VERSION = 1;
+const RESOURCE_DB_VERSION = 2;
  const RESOURCE_STORE_NAME = "resources";
 
 
@@ -15,7 +15,7 @@ export function openResourceDB(): Promise<IDBDatabase> {
 
       if (!db.objectStoreNames.contains(RESOURCE_STORE_NAME)) {
         const store = db.createObjectStore(RESOURCE_STORE_NAME, {
-          keyPath: ["month", "changeId", "description", "type"], // ensure uniqueness
+          keyPath: "id", // ensure uniqueness (id of the event + month)
         });
 
         store.createIndex("byMonth", "month");

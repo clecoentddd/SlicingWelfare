@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { openResourceDB } from "../../slices/03_viewResources/openResourceDB";
 
 type ResourceRow = {
+  id: string; // Add the id field to the type
   month: string;
   type: string;
   description: string;
@@ -22,15 +23,15 @@ export default function ProjectionViewPage() {
         const db = await openResourceDB();
         const tx = db.transaction("resources", "readonly");
         const store = tx.objectStore("resources");
-  
+
         const request = store.getAll();
-  
+
         request.onsuccess = () => {
           const result: ResourceRow[] = request.result;
           result.sort((a, b) => b.timestamp - a.timestamp);
           setRows(result);
         };
-  
+
         request.onerror = () => {
           console.error("❌ Failed to fetch from 'resources' store");
         };
@@ -38,38 +39,40 @@ export default function ProjectionViewPage() {
         console.error("❌ Failed to open ResourceDB:", err);
       }
     }
-  
+
     fetchData();
   }, []);
-  
 
   return (
     <main style={{ padding: "1rem" }}>
       <h1>Resource Projection Table</h1>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th>Month</th>
-            <th>Description</th>
-            <th>Type</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Change ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, idx) => (
-            <tr key={idx} style={{ borderBottom: "1px solid #ccc" }}>
-              <td>{r.month}</td>
-              <td>{r.description}</td>
-              <td>{r.type}</td>
-              <td>CHF {r.amount}</td>
-              <td>{r.status}</td>
-              <td>{r.changeId}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Month</th>
+      <th>Description</th>
+      <th>Type</th>
+      <th>Amount</th>
+      <th>Status</th>
+      <th>Change ID</th>
+    </tr>
+  </thead>
+  <tbody>
+    {rows.map((r, idx) => (
+      <tr key={idx} style={{ borderBottom: "1px solid #ccc" }}>
+        <td>{r.id}</td>
+        <td>{r.month}</td>
+        <td>{r.description}</td>
+        <td>{r.type}</td>
+        <td>CHF {r.amount}</td>
+        <td>{r.status}</td>
+        <td>{r.changeId}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
     </main>
   );
 }

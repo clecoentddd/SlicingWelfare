@@ -9,6 +9,7 @@ import { handlePushCommand } from "../slices/04_PushChange/handlePushCommand";
 import { handleCommitChanges } from "../slices/02_commitChanges/handleCommitChanges";
 import { openEventDB } from "../slices/shared/openEventDB";
 import { startProjectionListener } from "../slices/03_viewResources/projectionHandler";
+import { startPushedProjectionListener } from "../slices/05_updateChangesToPushed/projectionHandler";
 import styles from "./page.module.css";
 import ProjectionPanel from "../slices/03_viewResources/projectionPanel";
 import { getChangeStatus } from "../slices/shared/getStatus";
@@ -90,6 +91,7 @@ export default function Page() {
   useEffect(() => {
     loadEvents();
     startProjectionListener();
+    startPushedProjectionListener();
   }, []);
 
   return (
