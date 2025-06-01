@@ -1,8 +1,8 @@
-// src/slices/01_createChange/createChangeHandler.ts
 "use client";
 
-import { openEventDB } from "../shared/openEventDB"; // Adjust the import path as necessary
+import { openEventDB } from "../shared/openEventDB";
 import { ChangeCreatedEvent, StoredEvent } from "../shared/genericTypes";
+import { replayAggregate } from "../shared/replayAggregate";
 
 export async function createChangeHandler() {
   console.log("Creating a new change...");
@@ -10,7 +10,7 @@ export async function createChangeHandler() {
   // Open the IndexedDB database
   const db = await openEventDB();
 
-  // Start a read-only transaction to check for existing open changes
+  // Start a read-only transaction to check for existing changes
   const readTx = db.transaction("events", "readonly");
   const store = readTx.objectStore("events");
   const request = store.getAll();
@@ -20,13 +20,16 @@ export async function createChangeHandler() {
 
   console.log("Current events in DB:", currentEvents);
 
-  // Check if there is already an open change
-  const openChangeExists = currentEvents.some(event =>
-    event.type === "ChangeCreated" && event.payload.status === "Open"
-  );
+  // Get unique changeIds from the events
+  const changeIds = [...new Set(currentEvents.map(event => event.payload.changeId))];
 
-  if (openChangeExists) {
-    throw new Error("Cannot create a new change because there is already an open change.");
+  // Replay each aggregate to check the status
+  for (const changeId of changeIds) {
+    const { status } = replayAggregate(currentEvents, changeId);
+
+    if (status === "Open") {
+      throw new Error(`Cannot create a new change because there is already an open change with ID ${changeId} and status ${status}.`);
+    }
   }
 
   // Generate a simple hex ID
