@@ -1,26 +1,24 @@
 // src/app/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react"; // Added useCallback
 import { StoredEvent } from "../slices/shared/genericTypes";
 import { createChangeHandler } from "../slices/01_createChange/createChangeHandler";
 import { addIncomeCommand, addExpenseCommand } from "../slices/02_commitChanges/addIncomesAndExpenses";
 import { handlePushCommand } from "../slices/04_PushChange/handlePushCommand";
 import { handleCommitChanges } from "../slices/02_commitChanges/handleCommitChanges";
-import { openEventDB } from "../slices/shared/openEventDB";
-import { startProjectionListener } from "../slices/03_viewResources/projectionHandler";
-import { startPushedProjectionListener } from "../slices/05_updateChangesToPushed/projectionHandler";
+import { openEventDB } from "../slices/shared/openEventDB"; // Your event DB opener
+import { startUnifiedProjectionListener, stopUnifiedProjectionListener } from "../slices/shared/projections/unifiedListener"; // Corrected import path for the listener
 import styles from "./page.module.css";
 import ProjectionPanel from "../slices/03_viewResources/projectionPanel";
 import { getChangeStatus } from "../slices/shared/getStatus";
 
-async function fetchEvents(): Promise<StoredEvent[]> {
+// This function fetches ALL events from EventDB for display in the UI.
+// It's separate from the projection's internal event fetching.
+async function fetchAllEventsForDisplay(): Promise<StoredEvent[]> {
   const db = await openEventDB();
-  return await db.getAll("events");
+  return await db.getAll("events"); // 'events' is the object store name
 }
-
-
-
 
 export default function Page() {
   const [dbEvents, setDbEvents] = useState<StoredEvent[]>([]);
@@ -28,15 +26,25 @@ export default function Page() {
   const [pending, setPending] = useState<StoredEvent[]>([]);
   const [changeId, setChangeId] = useState<string | null>(null);
 
-  const loadEvents = async () => {
-    const events = await fetchEvents();
-    setDbEvents(events);
+  // Use useCallback to memoize this function, preventing unnecessary re-renders
+  // and ensuring stable dependencies for useEffect if used elsewhere.
+  const loadEventsForDisplay = useCallback(async () => {
+    try {
+      const events = await fetchAllEventsForDisplay();
+      setDbEvents(events);
 
-    const latestChangeEvent = events.reverse().find(e => e.type === "ChangeCreated");
-    if (latestChangeEvent) {
-      setChangeId(latestChangeEvent.payload.changeId);
+      // Find the latest ChangeCreated event for setting changeId
+      const latestChangeEvent = events.reverse().find(e => e.type === "ChangeCreated");
+      if (latestChangeEvent) {
+        setChangeId(latestChangeEvent.payload.changeId);
+      } else {
+        setChangeId(null); // No change created yet
+      }
+    } catch (err: any) {
+      console.error("Error loading events for display:", err);
+      setError("Failed to load events for display: " + err.message);
     }
-  };
+  }, []); // Empty dependency array because it doesn't depend on component state/props
 
   const latestChangeStatus = useMemo(() => {
     return getChangeStatus(dbEvents, changeId);
@@ -47,20 +55,26 @@ export default function Page() {
     try {
       const { changeId: newChangeId } = await createChangeHandler();
       setChangeId(newChangeId);
-      await loadEvents();
+      await loadEventsForDisplay(); // Reload events after creation
     } catch (err: any) {
       setError(err.message);
     }
   };
 
   const handleAddIncome = async () => {
-    if (!changeId) return;
+    if (!changeId) {
+      setError("Please create a change first.");
+      return;
+    }
     const event = await addIncomeCommand(changeId);
     if (event) setPending((prev) => [...prev, event]);
   };
 
   const handleAddExpense = async () => {
-    if (!changeId) return;
+    if (!changeId) {
+      setError("Please create a change first.");
+      return;
+    }
     const event = await addExpenseCommand(changeId);
     if (event) setPending((prev) => [...prev, event]);
   };
@@ -68,7 +82,7 @@ export default function Page() {
   const handleCommit = async () => {
     try {
       await handleCommitChanges(pending, changeId);
-      await loadEvents();
+      await loadEventsForDisplay(); // Reload events after commit
       setPending([]);
     } catch (err: any) {
       setError(err.message);
@@ -82,17 +96,35 @@ export default function Page() {
     }
     try {
       await handlePushCommand(changeId);
-      await loadEvents();
+      await loadEventsForDisplay(); // Reload events after push
     } catch (err: any) {
       setError(err.message);
+    (error: any) => { // Catch error specifically for Push button
+        setError(error.message);
+    }
     }
   };
 
   useEffect(() => {
-    loadEvents();
-    startProjectionListener();
-    startPushedProjectionListener();
-  }, []);
+    console.log("page.tsx: Setting up unified projection listener and initial event display.");
+
+    // 1. Start the unified projection listener
+    startUnifiedProjectionListener();
+
+    // 2. Load all events for immediate display in the UI
+    loadEventsForDisplay();
+
+    // 3. Set up an interval to periodically refresh the UI's event list
+    // This catches events added by other means or ensures freshness.
+    const displayRefreshIntervalId = setInterval(loadEventsForDisplay, 3000); // Refresh every 3 seconds
+
+    // Cleanup function for when the component unmounts
+    return () => {
+      console.log("page.tsx: Cleaning up unified projection listener and display refresh interval.");
+      stopUnifiedProjectionListener(); // Stop the projection listener
+      clearInterval(displayRefreshIntervalId); // Clear the UI refresh interval
+    };
+  }, [loadEventsForDisplay]); // Dependency: loadEventsForDisplay to ensure it's stable
 
   return (
     <main className={styles.container}>
@@ -130,7 +162,7 @@ export default function Page() {
           )}
         </div>
 
-        <h3 className={styles.eventsTitle}>All Events</h3>
+        <h3 className={styles.eventsTitle}>All Events (from EventDB)</h3> {/* Clarified title */}
         {dbEvents.length === 0 ? (
           <p>No events to display.</p>
         ) : (
