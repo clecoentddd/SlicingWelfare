@@ -17,26 +17,38 @@ type ResourceRow = {
 export default function ProjectionPanel() {
   const [grouped, setGrouped] = useState<Record<string, ResourceRow[]>>({});
 
-  useEffect(() => {
-    async function load() {
-      const db = await openResourceDB();
-      const tx = db.transaction("resources", "readonly");
-      const store = tx.objectStore("resources");
+ useEffect(() => {
+  async function load() {
+    const db = await openResourceDB();
+    const tx = db.transaction("resources", "readonly");
+    const store = tx.objectStore("resources");
 
-      const all: ResourceRow[] = await getAllFromStore<ResourceRow>(store);
-      const sorted = all.sort((a, b) => b.timestamp - a.timestamp);
+    const all: ResourceRow[] = await getAllFromStore<ResourceRow>(store);
 
-      const byMonth: Record<string, ResourceRow[]> = {};
-      for (const row of sorted) {
-        if (!byMonth[row.month]) byMonth[row.month] = [];
-        byMonth[row.month].push(row);
-      }
+    // Sort by timestamp in descending order
+    const sorted = all.sort((a, b) => b.timestamp - a.timestamp);
 
-      setGrouped(byMonth);
+    // Group by month
+    const byMonth: Record<string, ResourceRow[]> = {};
+    for (const row of sorted) {
+      if (!byMonth[row.month]) byMonth[row.month] = [];
+      byMonth[row.month].push(row);
     }
 
-    load();
-  }, []);
+    // Sort the grouped data by month in descending order
+    const sortedGrouped = Object.keys(byMonth)
+      .sort((a, b) => b.localeCompare(a)) // Sort months in descending order
+      .reduce((acc, month) => {
+        acc[month] = byMonth[month];
+        return acc;
+      }, {} as Record<string, ResourceRow[]>);
+
+    setGrouped(sortedGrouped);
+  }
+
+  load();
+}, []);
+
 
   return (
     <div className={styles.panel}>

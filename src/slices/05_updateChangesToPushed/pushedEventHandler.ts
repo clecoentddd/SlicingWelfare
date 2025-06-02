@@ -48,7 +48,7 @@ export async function pushedEventHandler(ev: StoredEvent, resourceStore: IDBPObj
 
         const putOperationPromise = resourceStore.put(updatedResource)
             .then((key) => {
-                console.log(`Pushed Event Handler (Put Result): Successfully queued update for resource ID: ${updatedResource.id} with key: ${key}. Data: ${JSON.stringify(updatedResource)}`);
+                //console.log(`Pushed Event Handler (Put Result): Successfully queued update for resource ID: ${updatedResource.id} with key: ${key}. Data: ${JSON.stringify(updatedResource)}`);
                 return key;
             })
             .catch(error => {
@@ -83,7 +83,7 @@ export async function pushedEventHandler(ev: StoredEvent, resourceStore: IDBPObj
                 verifiedResources.push(resource);
             }
             await verificationTx.done;
-            console.log(`333 Pushed Event Handler: Verified resource states AFTER commit (Event ID: ${eventWithId.id}):`, JSON.stringify(verifiedResources, null, 2));
+            // console.log(`333 Pushed Event Handler: Verified resource states AFTER commit (Event ID: ${eventWithId.id}):`, JSON.stringify(verifiedResources, null, 2));
         } catch (verifError) {
             console.error(`🔥 Pushed Event Handler (Verification Error): Failed to verify resources for Event ID ${eventWithId.id}:`, verifError);
         }

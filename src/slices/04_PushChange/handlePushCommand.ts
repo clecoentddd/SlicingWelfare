@@ -2,8 +2,9 @@
 import { openEventDB } from "../shared/openEventDB";
 import { Event, StoredEvent } from "../shared/genericTypes";
 import { replayAggregate } from "../shared/replayAggregate";
+import { publishDataPushedEvent } from "./eventPushedPublishedHandler";
 
-export async function handlePushCommand(changeId: string) {
+export async function handlePushCommand(changeId: string, id: string) {
   const db = await openEventDB();
   const tx = db.transaction("events", "readonly");
   const store = tx.objectStore("events");
@@ -28,4 +29,8 @@ export async function handlePushCommand(changeId: string) {
   const writeStore = writeTx.objectStore("events");
   await writeStore.add(ev);
   await writeTx.done;
+
+  // Publish the DataPushed event
+  console.log ("ready to push/sub", changeId);
+  await publishDataPushedEvent(changeId);
 }

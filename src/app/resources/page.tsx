@@ -17,31 +17,38 @@ type ResourceRow = {
 export default function ProjectionViewPage() {
   const [rows, setRows] = useState<ResourceRow[]>([]);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const db = await openResourceDB();
-        const tx = db.transaction("resources", "readonly");
-        const store = tx.objectStore("resources");
+ useEffect(() => {
+  async function fetchData() {
+    try {
+      const db = await openResourceDB();
+      const tx = db.transaction("resources", "readonly");
+      const store = tx.objectStore("resources");
 
-        const request = store.getAll();
+      const request = store.getAll();
 
-        request.onsuccess = () => {
-          const result: ResourceRow[] = request.result;
-          result.sort((a, b) => b.timestamp - a.timestamp);
-          setRows(result);
-        };
+      request.onsuccess = () => {
+        let result: ResourceRow[] = request.result;
 
-        request.onerror = () => {
-          console.error("❌ Failed to fetch from 'resources' store");
-        };
-      } catch (err) {
-        console.error("❌ Failed to open ResourceDB:", err);
-      }
+        // Sort by timestamp in descending order
+        result.sort((a, b) => b.timestamp - a.timestamp);
+
+        // Sort by month in descending order
+        result.sort((a, b) => b.month.localeCompare(a.month));
+
+        setRows(result);
+      };
+
+      request.onerror = () => {
+        console.error("❌ Failed to fetch from 'resources' store");
+      };
+    } catch (err) {
+      console.error("❌ Failed to open ResourceDB:", err);
     }
+  }
 
-    fetchData();
-  }, []);
+  fetchData();
+}, []);
+
 
   return (
     <main style={{ padding: "1rem" }}>

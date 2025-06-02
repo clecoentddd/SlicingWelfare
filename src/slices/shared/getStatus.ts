@@ -27,7 +27,7 @@ export function getChangeStatus(events: StoredEvent[], changeId: string | null):
       console.log("Change is Cancelled.");
       return "Cancelled";
     } else if (event.type === "ChangePushed") {
-      console.log("Change is Pushed.");
+      // console.log("Change is Pushed.");
       return "Pushed";
     } else if (event.type === "IncomeAdded" || event.type === "ExpenseAdded") {
       // console.log("Change is Committed.");
