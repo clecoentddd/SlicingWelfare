@@ -6,7 +6,7 @@ import { pushedEventHandler } from '../../05_updateChangesToPushed/pushedEventHa
 import type { StoredEvent } from '../genericTypes'; // Assuming genericTypes are here
 import type { IDBPObjectStore, IDBPTransaction } from 'idb'; // For IndexedDB types
 
-const POLLING_INTERVAL_MS = 3000; // Poll for new events every 3 seconds
+const POLLING_INTERVAL_MS = 1000; // Poll for new events every 3 seconds
 
 let listenerIntervalId: NodeJS.Timeout | null = null; // To store the interval ID for cleanup
 
