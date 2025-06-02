@@ -2,7 +2,7 @@
 
 // src/config/dbConstants.ts
 const RESOURCE_DB_NAME = "ResourceDB";
-const RESOURCE_DB_VERSION = 2;
+const RESOURCE_DB_VERSION = 3;
  const RESOURCE_STORE_NAME = "resources";
 
 
@@ -21,6 +21,7 @@ export function openResourceDB(): Promise<IDBDatabase> {
         store.createIndex("byMonth", "month");
         store.createIndex("byStatus", "status");
         store.createIndex("byChangeId", "changeId");
+        store.createIndex("EVENT_ID", "EVENT_ID", { unique: false }); // Create the EVENT_ID index
       }
     };
 

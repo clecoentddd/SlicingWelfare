@@ -1,99 +1,93 @@
-// src/handlers/pushedEventHandler.ts
-import { openResourceDB } from "../03_viewResources/openResourceDB"; // Still needed for the post-transaction verification read
-import type { StoredEvent } from "@/slices/shared/genericTypes"; // Assuming your genericTypes are here
-import type { IDBPObjectStore } from 'idb'; // For IndexedDB object store type
+// src/05_updateChangesToPushed/pushedEventHandler.ts
+import { openResourceDBWithIdb, type AppDBSchema, type Resource } from '../shared/openResourceDBListener';
+import type { EventWithId } from '../shared/genericTypes';
+import type { IDBPObjectStore } from 'idb';
+import { hasId } from '../shared/sharedProjections';
 
-// Re-using hasId from sharedProjections as it's a utility
-import { hasId } from '../shared/sharedProjections'; // Assuming this utility is here
+const RESOURCE_STORE_NAME = "resources";
 
 /**
- * Handles ChangePushed events to update resource statuses from "Committed" to "Pushed".
- * @param ev The StoredEvent (ChangePushed).
- * @param resourceStore The IDBPObjectStore for 'resources' from the current transaction.
+ * Handles ChangePushed events to update resource statuses.
+ * It finds all 'Committed' resources associated with the event's changeId
+ * and updates their status to 'Pushed' if they are older than the current event.
+ *
+ * @param ev The ChangePushed event, guaranteed to have an 'id'.
+ * @param resourceStore The 'resources' object store from the current transaction.
  */
-export async function pushedEventHandler(ev: StoredEvent, resourceStore: IDBPObjectStore<unknown, ["resources"], "resources", "readwrite">): Promise<void> {
+export async function pushedEventHandler(
+  ev: EventWithId,
+  resourceStore: IDBPObjectStore<AppDBSchema, [typeof RESOURCE_STORE_NAME], typeof RESOURCE_STORE_NAME, "readwrite">
+): Promise<void> {
+  console.log(`Pushed Handler: Processing event ${ev.id}, type: ${ev.type}`);
+
   if (ev.type === "ChangePushed" && hasId(ev)) {
-    const eventWithId = ev as { id: number } & typeof ev;
-    // console.log(`--- Pushed Event Handler: Processing ChangePushed event with ID: ${eventWithId.id} and timestamp: ${eventWithId.timestamp} ---`);
-    const { changeId } = ev.payload;
+    const { changeId, status } = ev.payload;
+    const currentEventId = ev.id;
+
+    console.log(`Pushed Handler: Updating resources for changeId: ${changeId} based on event ID: ${currentEventId}`);
 
     const index = resourceStore.index("byChangeId");
+    const resourcesToProcess = await index.getAll(IDBKeyRange.only(changeId));
 
-    // console.log(`Pushed Event Handler: Fetching resources for changeId: ${changeId} BEFORE update attempt (Event ID: ${eventWithId.id}).`);
-    const resourcesBeforeUpdate = await index.getAll(IDBKeyRange.only(changeId));
-    // console.log(`Pushed Event Handler: Found ${resourcesBeforeUpdate.length} resources for changeId: ${changeId} (BEFORE update, Event ID: ${eventWithId.id}). Details:`, JSON.stringify(resourcesBeforeUpdate, null, 2));
-
-    const putRequests: Promise<any>[] = [];
+    const putOperations: Promise<any>[] = [];
     const updatedResourceIds: string[] = [];
-    let resourcesMeetingCriteria = 0;
 
-    for (const resource of resourcesBeforeUpdate) {
-      const resourceIdPart = resource.id.split('-')[0];
-
-      const condition1 = (resource.status === "Committed");
-      const condition2 = (parseInt(resourceIdPart) < eventWithId.id); // Using ID comparison as discussed
-
-      // console.log(`Pushed Event Handler: Checking resource ID: ${resource.id} (status: ${resource.status}, idPart: ${resourceIdPart}) against ChangePushed event ID: ${eventWithId.id}.`);
-      // console.log(`  Condition 1 (status === "Committed"): ${condition1}`);
-      // console.log(`  Condition 2 (idPart < event ID): ${condition2} (${parseInt(resourceIdPart)} < ${eventWithId.id})`);
-
-      if (condition1 && condition2) {
-        resourcesMeetingCriteria++;
-        // console.log(`Pushed Event Handler: Criteria MET for resource with full ID: ${resource.id}. Preparing to update.`);
-        const updatedResource = { ...resource, status: "Pushed" };
+    for (const resource of resourcesToProcess) {
+      // Update if resource is 'Committed' AND it was last updated by an event older than the current one
+      if (resource.status === "Committed" && resource.EVENT_ID < currentEventId) {
+        const updatedResource: Resource = {
+          ...resource,
+          status: status, // Should be "Pushed" from the event payload
+          timestamp: ev.timestamp, // Update resource's timestamp to the current event's
+          EVENT_ID: currentEventId, // Record which event caused this update
+        };
         updatedResourceIds.push(updatedResource.id);
-
-        const primaryKey = updatedResource.id;
-        // console.log(`Pushed Event Handler: Attempting to put (update) resource with primary key: ${primaryKey} to status: ${updatedResource.status}`);
-
-        const putOperationPromise = resourceStore.put(updatedResource)
-            .then((key) => {
-                //console.log(`Pushed Event Handler (Put Result): Successfully queued update for resource ID: ${updatedResource.id} with key: ${key}. Data: ${JSON.stringify(updatedResource)}`);
-                return key;
-            })
-            .catch(error => {
-                console.error(`Pushed Event Handler (Put Error): Failed to queue update for resource ID: ${updatedResource.id} with key: ${primaryKey}. Error:`, error);
-                throw error;
-            });
-        putRequests.push(putOperationPromise);
-
+        putOperations.push(
+          resourceStore.put(updatedResource).catch(error => {
+            console.error(`Pushed Handler: Failed to put resource ${updatedResource.id}. Error:`, error);
+            throw error; // Re-throw to propagate transaction failure
+          })
+        );
       } else {
-       // console.log(`Pushed Event Handler: Skipping resource with full ID: ${resource.id} (criteria NOT met).`);
+        // Log if a resource doesn't meet the update criteria
+        console.log(`Pushed Handler: Resource ${resource.id} (status: ${resource.status}, EVENT_ID: ${resource.EVENT_ID}) did not meet update criteria for event ${currentEventId}.`);
       }
     }
 
-    if (putRequests.length > 0) {
-      // console.log(`Pushed Event Handler (Event ID ${eventWithId.id}): Queued ${putRequests.length} updates for resources meeting criteria (${resourcesMeetingCriteria}).`);
-      await Promise.all(putRequests);
-      // console.log(`Pushed Event Handler (Event ID ${eventWithId.id}): All individual put operations for this event successfully queued.`);
+    if (putOperations.length > 0) {
+      console.log(`Pushed Handler: Attempting to update ${putOperations.length} resources for changeId ${changeId}.`);
+      await Promise.all(putOperations);
+      console.log(`Pushed Handler: All updates for changeId ${changeId} completed.`);
     } else {
-      // console.log(`Pushed Event Handler (Event ID ${eventWithId.id}): No resources met criteria for update. No operations queued.`);
+      console.log(`Pushed Handler: No resources met update criteria for changeId ${changeId} and event ${currentEventId}.`);
     }
 
-    // --- Post-transaction verification read (optional, for debugging) ---
-    // This *still* needs a new read-only transaction, as the 'write' transaction is managed higher up in page.tsx
-if (updatedResourceIds.length > 0) {
-    const verificationDB = await openResourceDB(); // Open a new DB connection for verification
-    const verificationTx = verificationDB.transaction("resources", "readonly");
-    const verificationStore = verificationTx.objectStore("resources");
-    const verifiedResources: any[] = [];
+    // --- Post-transaction verification ---
+    // This step ensures the state is as expected after the transaction has committed.
+    if (updatedResourceIds.length > 0) {
+      console.log(`Pushed Handler: Verifying updated resources.`);
+      const verificationDB = await openResourceDBWithIdb();
+      const verificationTx = verificationDB.transaction(RESOURCE_STORE_NAME, "readonly");
+      const verificationStore = verificationTx.objectStore(RESOURCE_STORE_NAME);
 
-    try {
+      try {
+        const verifiedResources: Resource[] = [];
         for (const id of updatedResourceIds) {
-            const request = verificationStore.get(id);
-            const resource = await new Promise((resolve, reject) => {
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
+          const resource = await verificationStore.get(id);
+          if (resource) {
             verifiedResources.push(resource);
+          } else {
+            console.warn(`Pushed Handler (Verification): Resource ID ${id} not found.`);
+          }
         }
-        // The transaction will automatically commit when it goes out of scope
-        console.log(`Pushed Event Handler: Verified resource states AFTER commit (Event ID: ${eventWithId.id}):`, JSON.stringify(verifiedResources, null, 2));
-    } catch (verifError) {
-        console.error(`Pushed Event Handler (Verification Error): Failed to verify resources for Event ID ${eventWithId.id}:`, verifError);
-    }
+        console.log(`Pushed Handler: Verified resource states after push (Event ID: ${currentEventId}):`, JSON.stringify(verifiedResources, null, 2));
+      } catch (verifError) {
+        console.error(`Pushed Handler (Verification Error): Failed to verify resources for Event ID ${currentEventId}:`, verifError);
+      }
     } else {
-        console.log(`Pushed Event Handler: No resources were updated for event ID ${eventWithId.id}, skipping verification read.`);
+      console.log(`Pushed Handler: No resources were updated, skipping verification.`);
     }
+  } else {
+    console.warn(`Pushed Handler: Received unexpected event type '${ev.type}' or event without ID. Skipping.`);
   }
 }

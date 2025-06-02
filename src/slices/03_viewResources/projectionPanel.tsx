@@ -12,43 +12,43 @@ type ResourceRow = {
   changeId: string;
   status: string;
   timestamp: number;
+  EVENT_ID: number; // Include EVENT_ID in the type definition
 };
 
 export default function ProjectionPanel() {
   const [grouped, setGrouped] = useState<Record<string, ResourceRow[]>>({});
 
- useEffect(() => {
-  async function load() {
-    const db = await openResourceDB();
-    const tx = db.transaction("resources", "readonly");
-    const store = tx.objectStore("resources");
+  useEffect(() => {
+    async function load() {
+      const db = await openResourceDB();
+      const tx = db.transaction("resources", "readonly");
+      const store = tx.objectStore("resources");
 
-    const all: ResourceRow[] = await getAllFromStore<ResourceRow>(store);
+      const all: ResourceRow[] = await getAllFromStore<ResourceRow>(store);
 
-    // Sort by timestamp in descending order
-    const sorted = all.sort((a, b) => b.timestamp - a.timestamp);
+      // Sort by timestamp in descending order
+      const sorted = all.sort((a, b) => b.timestamp - a.timestamp);
 
-    // Group by month
-    const byMonth: Record<string, ResourceRow[]> = {};
-    for (const row of sorted) {
-      if (!byMonth[row.month]) byMonth[row.month] = [];
-      byMonth[row.month].push(row);
+      // Group by month
+      const byMonth: Record<string, ResourceRow[]> = {};
+      for (const row of sorted) {
+        if (!byMonth[row.month]) byMonth[row.month] = [];
+        byMonth[row.month].push(row);
+      }
+
+      // Sort the grouped data by month in descending order
+      const sortedGrouped = Object.keys(byMonth)
+        .sort((a, b) => b.localeCompare(a)) // Sort months in descending order
+        .reduce((acc, month) => {
+          acc[month] = byMonth[month];
+          return acc;
+        }, {} as Record<string, ResourceRow[]>);
+
+      setGrouped(sortedGrouped);
     }
 
-    // Sort the grouped data by month in descending order
-    const sortedGrouped = Object.keys(byMonth)
-      .sort((a, b) => b.localeCompare(a)) // Sort months in descending order
-      .reduce((acc, month) => {
-        acc[month] = byMonth[month];
-        return acc;
-      }, {} as Record<string, ResourceRow[]>);
-
-    setGrouped(sortedGrouped);
-  }
-
-  load();
-}, []);
-
+    load();
+  }, []);
 
   return (
     <div className={styles.panel}>
@@ -58,7 +58,14 @@ export default function ProjectionPanel() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th colSpan={4} className={styles.monthHeader}>{month}</th>
+                <th colSpan={5} className={styles.monthHeader}>{month}</th>
+              </tr>
+              <tr>
+                <th className={styles.headerCell}>Description</th>
+                <th className={styles.headerCell}>Type</th>
+                <th className={styles.headerCell}>Amount</th>
+                <th className={styles.headerCell}>Status</th>
+                <th className={styles.headerCell}>Event ID</th>
               </tr>
             </thead>
             <tbody>
@@ -68,6 +75,7 @@ export default function ProjectionPanel() {
                   <td className={styles.type}>{entry.type}</td>
                   <td className={styles.amount}>CHF {entry.amount}</td>
                   <td className={styles.status}>{entry.status}</td>
+                  <td className={styles.eventId}>{entry.EVENT_ID}</td>
                 </tr>
               ))}
             </tbody>

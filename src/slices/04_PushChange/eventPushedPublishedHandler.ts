@@ -3,12 +3,12 @@ import { openEventDB } from "../shared/openEventDB";
 import { eventEmitter } from '../shared/eventEmitter';
 import { PushedDomainEvent } from "../shared/domainEvents";
 
-export async function publishDataPushedEvent(changeId: string) {
+export async function publishDataPushedEvent(changeId: string, eventId: number) {
   const db = await openEventDB();
   const ev: PushedDomainEvent = {
     type: "DataPushed",
     timestamp: Date.now(),
-    payload: { changeId }
+    payload: { changeId , eventId}
   };
 
   const tx = db.transaction("events", "readwrite");

@@ -7,7 +7,7 @@ console.log('Registering event listener for DataPushed event...');
 eventEmitter.on('DataPushed', (event: PushedDomainEvent) => {
   console.log(`Pushed domainEvent received with changeId = ${event.payload.changeId}`);
   // Add further processing logic here
-   retrieveDataForCalculation(event.payload.changeId);
+   retrieveDataForCalculation(event.payload.changeId, event.payload.eventId);
 });
 
 console.log('Processor is listening for DataPushed events...');

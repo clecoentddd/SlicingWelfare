@@ -5,5 +5,6 @@ export interface PushedDomainEvent {
   timestamp: number;
   payload: {
     changeId: string;
+    eventId: number;
   };
 }

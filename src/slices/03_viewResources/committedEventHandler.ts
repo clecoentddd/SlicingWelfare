@@ -1,74 +1,76 @@
-// src/handlers/commitEventHandler.ts
-import type { StoredEvent } from "@/slices/shared/genericTypes"; // Assuming your genericTypes are here
-import type { IDBPObjectStore } from 'idb'; // For IndexedDB object store type
+// src/03_viewResources/committedEventHandler.ts
+import type { StoredEvent, EventWithId } from '../shared/genericTypes';
+import type { AppDBSchema, Resource } from '../shared/openResourceDBListener';
+import type { IDBPObjectStore } from 'idb';
 
-// Re-using hasId from sharedProjections as it's a utility
-import { hasId } from '../shared/sharedProjections'; // Assuming this utility is here
+const RESOURCE_STORE_NAME = "resources";
 
-/**
- * Handles IncomeAdded and ExpenseAdded events to insert new entries into the resourceDB.
- * It will NOT update existing entries, preventing conflicts with the pushedEventHandler.
- * @param ev The StoredEvent (IncomeAdded or ExpenseAdded).
- * @param resourceStore The IDBPObjectStore for 'resources' from the current transaction.
- */
-export async function commitEventHandler(ev: StoredEvent, resourceStore: IDBPObjectStore<unknown, ["resources"], "resources", "readwrite">): Promise<void> {
-  if (!hasId(ev)) {
-    console.error("Commit Event Handler: Event does not have an ID:", ev);
-    return;
-  }
+export async function commitEventHandler(
+    event: EventWithId, // Event now guaranteed to have 'id'
+    resourceStore: IDBPObjectStore<AppDBSchema, [typeof RESOURCE_STORE_NAME], typeof RESOURCE_STORE_NAME, "readwrite">
+): Promise<void> {
+    console.log(`Commit Handler: Processing event ${event.id}, type: ${event.type}`);
 
-  if (ev.type === "IncomeAdded" || ev.type === "ExpenseAdded") {
-    const eventWithId = ev as { id: number } & typeof ev;
-    const { changeId, description, amount, period } = ev.payload;
-    const initialStatus = "Committed";
+    if (event.type === "IncomeAdded" || event.type === "ExpenseAdded") {
+        if (!event.payload || typeof event.payload.changeId !== 'string' || typeof event.payload.amount !== 'number' || !event.payload.period) {
+            console.warn(`Commit Handler: Invalid payload for ${event.type} (missing changeId, amount, or period). Skipping.`);
+            return;
+        }
 
-    const start = new Date(period.start);
-    const end = new Date(period.end);
-    const current = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
-    const last = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+        const { changeId, amount, description, period } = event.payload;
+        const putPromises: Promise<any>[] = []; // To collect all put operations
 
-    const putRequests: Promise<any>[] = [];
+        // Iterate through each month in the specified period
+        let currentMonthDate = new Date(period.start);
+        const endDate = new Date(period.end);
 
-    while (current <= last) {
-      const month = `${(current.getUTCMonth() + 1).toString().padStart(2, '0')}-${current.getUTCFullYear()}`;
-      const uniqueKey = `${eventWithId.id}-${month}`;
+        // Ensure currentMonthDate is at the start of its month to avoid issues with date arithmetic
+        currentMonthDate.setDate(1); 
+        
+        // Loop while the current month is less than or equal to the end month
+        // We compare year and month explicitly to handle end dates at the start of a month
+        while (
+            currentMonthDate.getFullYear() < endDate.getFullYear() ||
+            (currentMonthDate.getFullYear() === endDate.getFullYear() && currentMonthDate.getMonth() <= endDate.getMonth())
+        ) {
+            const year = currentMonthDate.getFullYear();
+            // Month is 0-indexed, so add 1 and pad with leading zero
+            const month = (currentMonthDate.getMonth() + 1).toString().padStart(2, '0'); 
+            const yearMonthString = `${month}-${year}`;
+            // Construct the unique Resource ID: event.id + "-" + YYYY-MM
+            const resourceId = `${event.id}-${yearMonthString}`;
+            
+            console.log(`Commit Handler: Preparing resource ${resourceId} for month ${yearMonthString}`);
 
-      const existingResource = await resourceStore.get(uniqueKey);
+            const newResource: Resource = {
+                id: resourceId, // Unique ID for this specific monthly resource record
+                description: description || 'Unknown', // Use payload description for resource description
+                amount: amount,
+                type: event.type === "IncomeAdded" ? "Income" : "Expense",
+                timestamp: event.timestamp, // Original event timestamp
+                
+                // Properties derived from event.id and period
+                month: yearMonthString, // The specific month for this resource record
+                status: 'Committed', // All newly created resources start as 'Committed'
+                EVENT_ID: event.id, // The ID of the event that created this set of resources
+                changeId: changeId, // The changeId from the payload, used for indexing
+            };
 
-      if (!existingResource) {
-        console.log(`Commit Event Handler: Inserting new resource: ${uniqueKey} with status: ${initialStatus}`);
-        const resourceToPut = {
-          id: uniqueKey,
-          month,
-          type: ev.type === "IncomeAdded" ? "Income" : "Expense",
-          description,
-          amount,
-          changeId,
-          status: initialStatus,
-          timestamp: ev.timestamp
-        };
-        putRequests.push(
-          resourceStore.add(resourceToPut) // Use .add() for strict insertion
-            .then((key) => {
-              console.log(`Commit Event Handler (Add Result): Successfully added new resource ID: ${resourceToPut.id} with key: ${key}. Data: ${JSON.stringify(resourceToPut)}`);
-            })
-            .catch(error => {
-              if (error.name === 'ConstraintError') {
-                console.warn(`Commit Event Handler (Add Error): Resource ID ${resourceToPut.id} already exists. Skipping insertion.`);
-              } else {
-                console.error(`Commit Event Handler (Add Error): Failed to add resource ID: ${resourceToPut.id}:`, error);
-                throw error;
-              }
-            })
-        );
-      } else {
-        console.log(`Commit Event Handler: Resource ${uniqueKey} already exists with status '${existingResource.status}'. Skipping insertion as per strict policy.`);
-      }
+            // Queue the put operation; IndexedDB will overwrite if ID already exists
+            putPromises.push(resourceStore.put(newResource));
 
-      current.setUTCMonth(current.getUTCMonth() + 1);
+            // Move to the next month
+            currentMonthDate.setMonth(currentMonthDate.getMonth() + 1);
+            // Ensure the date stays at the 1st of the month to prevent skipping months
+            // e.g., if currentMonthDate was 2025-01-31 and you add 1 month, it might become 2025-03-02
+            currentMonthDate.setDate(1);
+        }
+
+        // Await all queued put operations to complete
+        await Promise.all(putPromises);
+        console.log(`Commit Handler: Successfully processed and stored resources for event ${event.id} across its period.`);
+
+    } else {
+        console.warn(`Commit Handler: Received unhandled event type for commit: ${event.type}. Skipping.`);
     }
-
-    await Promise.all(putRequests);
-    console.log(`Commit Event Handler: All operations for event ${eventWithId.id} queued.`);
-  }
 }

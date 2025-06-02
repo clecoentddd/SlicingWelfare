@@ -1,4 +1,3 @@
-// src/slices/pushChange/handlePushCommand.ts
 import { openEventDB } from "../shared/openEventDB";
 import { Event, StoredEvent } from "../shared/genericTypes";
 import { replayAggregate } from "../shared/replayAggregate";
@@ -27,10 +26,18 @@ export async function handlePushCommand(changeId: string) {
   // Start a new transaction for writing
   const writeTx = db.transaction("events", "readwrite");
   const writeStore = writeTx.objectStore("events");
-  await writeStore.add(ev);
+
+  // Add the event and capture the generated id
+  const eventId = await writeStore.add(ev);
+  console.log("Event added with ID:", eventId);
+
+  // Ensure eventId is treated as a number
+  const numericEventId = typeof eventId === 'number' ? eventId : parseInt(eventId as string, 10);
+  console.log("Event added with numeric ID:", numericEventId);
+
   await writeTx.done;
 
-  // Publish the DataPushed event
-  console.log ("ready to push/sub", changeId);
-  await publishDataPushedEvent(changeId);
+  // Publish the DataPushed event with the numericEventId
+  console.log("Ready to push/sub", changeId);
+  await publishDataPushedEvent(changeId, numericEventId);
 }
