@@ -1,4 +1,3 @@
-// src/slices/processorCalculation/retrieveDataForCalculation.ts
 import { openResourceDB, getAllFromStore } from "../03_viewResources/openResourceDB";
 
 interface ResourceRow {
@@ -9,12 +8,13 @@ interface ResourceRow {
   status: string;
   changeId: string;
   timestamp: number;
+  EVENT_ID: number; // Include EVENT_ID in the interface
 }
 
-export async function retrieveDataForCalculation(changeId: string) {
+export async function retrieveDataForCalculation(changeId: string, eventId: number) {
   try {
     console.log('Starting data retrieval process...');
-    clearInterval(2000);
+    clearInterval(5000);
     console.log('Processor is listening for DataPushed events...');
 
     const db = await openResourceDB();
@@ -30,10 +30,10 @@ export async function retrieveDataForCalculation(changeId: string) {
     allRows.sort((a, b) => b.timestamp - a.timestamp);
     allRows.sort((a, b) => b.month.localeCompare(a.month));
 
-    const baseId = extractBaseId(changeId);
-    console.log(`Extracted base ID: ${baseId} from changeId: ${changeId}`);
+    
+    console.log(`Extracted event ID: ${eventId} from changeId: ${changeId}`);
 
-    const filteredRows = filterRowsByChangeIdAndStatus(allRows, changeId, baseId);
+    const filteredRows = filterRowsByChangeIdAndStatus(allRows, changeId, eventId);
     console.log(`Filtered ${filteredRows.length} rows based on changeId and status.`);
 
     const monthlyCalculations = calculateMonthlyBenefits(filteredRows);
@@ -43,17 +43,10 @@ export async function retrieveDataForCalculation(changeId: string) {
   }
 }
 
-function extractBaseId(id: string): number {
-  const baseId = parseInt(id.split('-')[0], 10);
-  console.log(`Extracting base ID: ${baseId} from ID: ${id}`);
-  return baseId;
-}
-
-function filterRowsByChangeIdAndStatus(rows: ResourceRow[], changeId: string, baseId: number): ResourceRow[] {
-  console.log(`Filtering rows by changeId: ${changeId} and baseId: ${baseId}`);
+function filterRowsByChangeIdAndStatus(rows: ResourceRow[], changeId: string, eventId: number): ResourceRow[] {
+  console.log(`Filtering rows by changeId: ${changeId} and eventId: ${eventId}`);
   const filteredRows = rows.filter(row => {
-    const rowBaseId = extractBaseId(row.id);
-    const matches = row.changeId === changeId && row.status === "Pushed" && rowBaseId <= baseId;
+    const matches = row.changeId === changeId && row.status === "Pushed" && row.EVENT_ID <= eventId;
     console.log(`Row ${row.id} matches filter: ${matches}`);
     return matches;
   });

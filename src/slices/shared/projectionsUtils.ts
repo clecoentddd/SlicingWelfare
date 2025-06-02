@@ -1,6 +1,6 @@
 // src/utils/sharedProjectionUtils.ts
 
-import { openResourceDB } from "./openResourceDB";
+import { openResourceDB } from "./openResourceDBListener";
 import type { StoredEvent } from "@/slices/shared/genericTypes";
 import { IDBPDatabase } from 'idb';
 

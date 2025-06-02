@@ -61,7 +61,7 @@ export type ChangeLifecycleEvent =
 export type IncomeAddedEvent = BaseEvent<
   "IncomeAdded",
   {
-    changeId: string;
+    changeId: string; // Resource's unique ID for committed events
     amount: number;
     description: string;
     period: {
@@ -74,7 +74,7 @@ export type IncomeAddedEvent = BaseEvent<
 export type ExpenseAddedEvent = BaseEvent<
   "ExpenseAdded",
   {
-    changeId: string;
+    changeId: string; // Resource's unique ID for committed events
     amount: number;
     description: string;
     period: {
@@ -88,6 +88,15 @@ export type ResourceEvent = IncomeAddedEvent | ExpenseAddedEvent;
 
 /* ────────────── Event union you will import elsewhere ────────────── */
 export type StoredEvent = ChangeLifecycleEvent | ResourceEvent;
+
+/**
+ * Represents an event retrieved from the database, which includes its unique numeric ID.
+ * This should be used for events that have already been stored and retrieved.
+ */
+// FIX: Use an intersection type ('&') instead of 'extends' for type aliases
+export type EventWithId = StoredEvent & {
+  id: number; // The database-assigned unique ID for the event
+};
 
 /* Back-compat alias (if you were using `Event` elsewhere) */
 export type Event = StoredEvent;
