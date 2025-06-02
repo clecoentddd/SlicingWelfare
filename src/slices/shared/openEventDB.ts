@@ -18,7 +18,7 @@ export async function openEventDB(): Promise<IDBPDatabase<unknown>> {
       if (!db.objectStoreNames.contains('events')) {
         const eventStore = db.createObjectStore('events', { keyPath: 'id', autoIncrement: true });
         eventStore.createIndex('byTimestamp', 'timestamp');
-        console.log("Event store 'events' created.");
+        // console.log("Event store 'events' created.");
       }
 
       // *** CRITICAL ADDITION: Create the 'metadata' store ***

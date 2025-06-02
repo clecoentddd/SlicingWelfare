@@ -25,7 +25,7 @@ export async function fetchEvents(): Promise<StoredEvent[]> {
         if (typeof storedTimestamp === 'number') {
             currentLastProcessedTimestamp = storedTimestamp;
         }
-        console.log(`fetchEvents: Loaded lastProcessedTimestamp from DB: ${currentLastProcessedTimestamp}`);
+        // console.log(`fetchEvents: Loaded lastProcessedTimestamp from DB: ${currentLastProcessedTimestamp}`);
     } catch (err) {
         console.warn("fetchEvents: Error loading lastProcessedTimestamp from DB. Defaulting to 0. This might be normal for first run if 'metadata' store or key doesn't exist yet.", err);
         currentLastProcessedTimestamp = 0;
@@ -37,7 +37,7 @@ export async function fetchEvents(): Promise<StoredEvent[]> {
     await readTx.done; // Ensure transaction completes
 
     const newEvents = allEvents.filter(event => event.timestamp > currentLastProcessedTimestamp);
-    console.log(`fetchEvents: Found ${newEvents.length} new events since last processed timestamp ${currentLastProcessedTimestamp}.`);
+    // console.log(`fetchEvents: Found ${newEvents.length} new events since last processed timestamp ${currentLastProcessedTimestamp}.`);
 
     if (newEvents.length > 0) {
         const newestTimestamp = Math.max(...newEvents.map(event => event.timestamp));
@@ -69,7 +69,7 @@ export async function processEventsWithHandler(
         return;
     }
 
-    console.log(`processEventsWithHandler: Starting processing for ${events.length} events in a single transaction.`);
+    // console.log(`processEventsWithHandler: Starting processing for ${events.length} events in a single transaction.`);
     // Ensure openResourceDB from src/utils/openResourceDB is used here
     const resourceDB = await openResourceDB();
     const tx: IDBPTransaction<unknown, ["resources"], "readwrite"> = resourceDB.transaction("resources", "readwrite");

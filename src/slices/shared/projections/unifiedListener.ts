@@ -11,11 +11,11 @@ const POLLING_INTERVAL_MS = 3000; // Poll for new events every 3 seconds
 let listenerIntervalId: NodeJS.Timeout | null = null; // To store the interval ID for cleanup
 
 async function processAllNewEvents(): Promise<void> {
-  console.log("Unified Listener (Module): Checking for new events...");
+  // console.log("Unified Listener (Module): Checking for new events...");
   try {
     const events = await fetchEvents(); // This fetches events newer than lastProcessedTimestamp
     if (events.length === 0) {
-      console.log("Unified Listener (Module): No new events found.");
+     // console.log("Unified Listener (Module): No new events found.");
       return;
     }
 
@@ -55,7 +55,7 @@ async function processAllNewEvents(): Promise<void> {
 
     // Commit the single transaction
     await tx.done;
-    console.log("Unified Listener (Module): All events in batch processed and single transaction committed successfully.");
+    // console.log("Unified Listener (Module): All events in batch processed and single transaction committed successfully.");
 
   } catch (error) {
     console.error("🔥 Unified Listener (Module) Error: Transaction or event processing failed:", error);
@@ -69,7 +69,7 @@ async function processAllNewEvents(): Promise<void> {
  * Starts the unified projection listener, including an initial run and then polling.
  */
 export async function startUnifiedProjectionListener(): Promise<void> {
-  console.log("Starting Unified Projection Listener from module...");
+  //console.log("Starting Unified Projection Listener from module...");
   // Clear any existing interval to prevent multiple listeners
   if (listenerIntervalId) {
     clearInterval(listenerIntervalId);
@@ -81,7 +81,7 @@ export async function startUnifiedProjectionListener(): Promise<void> {
 
   // Set up the polling interval
   listenerIntervalId = setInterval(() => {
-    console.log("Unified Listener (Module): Polling for new events...");
+    // console.log("Unified Listener (Module): Polling for new events...");
     processAllNewEvents();
   }, POLLING_INTERVAL_MS);
 }
@@ -91,7 +91,7 @@ export async function startUnifiedProjectionListener(): Promise<void> {
  */
 export function stopUnifiedProjectionListener(): void {
   if (listenerIntervalId) {
-    console.log("Stopping Unified Projection Listener from module.");
+   // console.log("Stopping Unified Projection Listener from module.");
     clearInterval(listenerIntervalId);
     listenerIntervalId = null;
   }
