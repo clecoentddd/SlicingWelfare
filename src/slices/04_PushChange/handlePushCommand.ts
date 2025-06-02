@@ -4,7 +4,7 @@ import { Event, StoredEvent } from "../shared/genericTypes";
 import { replayAggregate } from "../shared/replayAggregate";
 import { publishDataPushedEvent } from "./eventPushedPublishedHandler";
 
-export async function handlePushCommand(changeId: string, id: string) {
+export async function handlePushCommand(changeId: string) {
   const db = await openEventDB();
   const tx = db.transaction("events", "readonly");
   const store = tx.objectStore("events");

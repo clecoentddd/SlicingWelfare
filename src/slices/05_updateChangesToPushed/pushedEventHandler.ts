@@ -1,5 +1,5 @@
 // src/handlers/pushedEventHandler.ts
-import { openResourceDB } from "../shared/openResourceDB"; // Still needed for the post-transaction verification read
+import { openResourceDB } from "../03_viewResources/openResourceDB"; // Still needed for the post-transaction verification read
 import type { StoredEvent } from "@/slices/shared/genericTypes"; // Assuming your genericTypes are here
 import type { IDBPObjectStore } from 'idb'; // For IndexedDB object store type
 
@@ -72,21 +72,26 @@ export async function pushedEventHandler(ev: StoredEvent, resourceStore: IDBPObj
 
     // --- Post-transaction verification read (optional, for debugging) ---
     // This *still* needs a new read-only transaction, as the 'write' transaction is managed higher up in page.tsx
-    if (updatedResourceIds.length > 0) {
-        const verificationDB = await openResourceDB(); // Open a new DB connection for verification
-        const verificationTx = verificationDB.transaction("resources", "readonly");
-        const verificationStore = verificationTx.objectStore("resources");
-        const verifiedResources: any[] = [];
-        try {
-            for (const id of updatedResourceIds) {
-                const resource = await verificationStore.get(id);
-                verifiedResources.push(resource);
-            }
-            await verificationTx.done;
-            // console.log(`333 Pushed Event Handler: Verified resource states AFTER commit (Event ID: ${eventWithId.id}):`, JSON.stringify(verifiedResources, null, 2));
-        } catch (verifError) {
-            console.error(`🔥 Pushed Event Handler (Verification Error): Failed to verify resources for Event ID ${eventWithId.id}:`, verifError);
+if (updatedResourceIds.length > 0) {
+    const verificationDB = await openResourceDB(); // Open a new DB connection for verification
+    const verificationTx = verificationDB.transaction("resources", "readonly");
+    const verificationStore = verificationTx.objectStore("resources");
+    const verifiedResources: any[] = [];
+
+    try {
+        for (const id of updatedResourceIds) {
+            const request = verificationStore.get(id);
+            const resource = await new Promise((resolve, reject) => {
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+            verifiedResources.push(resource);
         }
+        // The transaction will automatically commit when it goes out of scope
+        console.log(`Pushed Event Handler: Verified resource states AFTER commit (Event ID: ${eventWithId.id}):`, JSON.stringify(verifiedResources, null, 2));
+    } catch (verifError) {
+        console.error(`Pushed Event Handler (Verification Error): Failed to verify resources for Event ID ${eventWithId.id}:`, verifError);
+    }
     } else {
         console.log(`Pushed Event Handler: No resources were updated for event ID ${eventWithId.id}, skipping verification read.`);
     }

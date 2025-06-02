@@ -12,6 +12,8 @@ import { startUnifiedProjectionListener, stopUnifiedProjectionListener } from ".
 import styles from "./page.module.css";
 import ProjectionPanel from "../slices/03_viewResources/projectionPanel";
 import { getChangeStatus } from "../slices/shared/getStatus";
+// Import the processorCalculation module to register the event listener
+import '../slices/06_CalculationProcessor/calculationProcessor';
 
 // This function fetches ALL events from EventDB for display in the UI.
 // It's separate from the projection's internal event fetching.
