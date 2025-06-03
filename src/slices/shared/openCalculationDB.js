@@ -27,7 +27,7 @@ export function openCalculationDB() {
       store.createIndex('byChangeId', 'changeId', { unique: false });
       store.createIndex('byCalculationId', 'calculationId', { unique: false });
       store.createIndex('byTimestamp', 'timestamp', { unique: false });
-      store.createIndex('byStatus', 'type', { unique: false }); 
+      store.createIndex('byStatus', 'status', { unique: false }); 
     },
   });
 }
