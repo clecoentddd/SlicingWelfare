@@ -2,31 +2,20 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-
-// Keep getEventDB and EVENT_STORE_NAME if other parts of page.jsx still use them directly.
-// Otherwise, they could be removed if all DB interactions are abstracted to eventRepository.
 import { getEventDB } from "../eventStore/eventDb.js";
 import { EVENT_STORE_NAME } from "../eventStore/eventDbConstants.js";
-
-// Import getAllEvents from eventRepository.js (still needed for display)
 import { getAllEvents } from "../eventStore/eventRepository.js";
-
-// NEW: Import createChangeHandler
 import { createChangeHandler } from "../slices/01_createChange/createChangeHandler.js";
-// REMOVE THIS LINE: import { v4 as uuidv4 } from 'uuid'; // uuidv4 is now used ONLY within createChangeHandler.js
-
 import { addIncomeCommand, addExpenseCommand } from "../slices/02_commitChanges/addIncomesAndExpensesUI.js";
 import { handlePushCommand } from "../slices/04_PushChange/handlePushCommand.js";
-import { handleCommitCommand } from "../slices/02_commitChanges/handleCommitCommand.js"; // Using your updated name
-
+import { handleCommitCommand } from "../slices/02_commitChanges/handleCommitCommand.js";
 import styles from "./page.module.css";
 import ProjectionPanel from "../slices/03_viewResources/projectionPanel.jsx";
 import { getChangeStatus } from "../slices/shared/getStatus.js";
-import { handleEventForProjection } from '../slices/03_viewResources/handleEventForProjection.js'; // Ensure this path is correct
+import { handleEventForProjection } from '../slices/03_viewResources/handleEventForProjection.js';
+import '../slices/06_CalculationProcessor/calculationProcessor.js';
+import Navbar from '../../components/Navbar';
 
-import '../slices/06_CalculationProcessor/calculationProcessor.js'; // Using your updated path
-
-// This function fetches ALL events from EventDB for display in the UI.
 async function fetchAllEventsForDisplay() {
   const events = await getAllEvents();
   return events;
@@ -66,18 +55,15 @@ export default function Page() {
   const handleCreateChange = async () => {
     setError(null);
     try {
-      console.log("Calling createChangeHandler from page.jsx..."); // Debug log
+      console.log("Calling createChangeHandler from page.jsx...");
 
-      // Call the centralized createChangeHandler, which now returns the full stored event
       const storedChangeEvent = await createChangeHandler();
-      setChangeId(storedChangeEvent.payload.changeId); // Set the changeId from the returned event
+      setChangeId(storedChangeEvent.payload.changeId);
 
-      // Pass the newly stored event to the projection handler
       await handleEventForProjection(storedChangeEvent);
-      await loadEventsForDisplay(); // Reload events for display after the change is created
+      await loadEventsForDisplay();
     } catch (err) {
-      console.error("Error in handleCreateChange:", err); // Log the full error
-      // Display more error info on UI for debugging (showing stack if available)
+      console.error("Error in handleCreateChange:", err);
       setError(err.stack || err.message || JSON.stringify(err));
     }
   };
@@ -102,10 +88,9 @@ export default function Page() {
 
   const handleCommit = async () => {
     try {
-      // handleCommitCommand will now use appendEvent internally
       await handleCommitCommand(pending, changeId);
       await loadEventsForDisplay();
-      setPending([]); // Clear pending after successful commit
+      setPending([]);
     } catch (err) {
       setError(err.message);
     }
@@ -117,66 +102,68 @@ export default function Page() {
       return;
     }
     try {
-      // handlePushCommand will now use appendEvent internally
       await handlePushCommand(changeId);
       await loadEventsForDisplay();
     } catch (error) {
-        setError(error.message);
+      setError(error.message);
     }
   };
 
   return (
-    <main className={styles.container}>
-      <section className={styles.leftColumn}>
-        <h1 className={styles.heading}>Event Sourcing Demo</h1>
-        <h2>Change ID: {changeId ?? "None"}</h2>
-        <p className={styles.statusText}>Status: {latestChangeStatus}</p>
+    <div>
+      <Navbar />
+      <main className={styles.container}>
+        <section className={styles.leftColumn}>
+          <h1 className={styles.heading}>Event Sourcing Demo</h1>
+          <h2>Change ID: {changeId ?? "None"}</h2>
+          <p className={styles.statusText}>Status: {latestChangeStatus}</p>
 
-        <button className={styles.btnCreate} onClick={handleCreateChange}>Create Change</button>
-        <button className={styles.btnIncome} onClick={handleAddIncome}>+ Income</button>
-        <button className={styles.btnExpense} onClick={handleAddExpense}>+ Expense</button>
-        <button className={styles.btnCommit} onClick={handleCommit} disabled={pending.length === 0}>Commit</button>
-        <button className={styles.btnPush} onClick={handlePush}>Push Changes</button>
+          <button className={styles.btnCreate} onClick={handleCreateChange}>Create Change</button>
+          <button className={styles.btnIncome} onClick={handleAddIncome}>+ Income</button>
+          <button className={styles.btnExpense} onClick={handleAddExpense}>+ Expense</button>
+          <button className={styles.btnCommit} onClick={handleCommit} disabled={pending.length === 0}>Commit</button>
+          <button className={styles.btnPush} onClick={handlePush}>Push Changes</button>
 
-        {error && <p className={styles.error}>{error}</p>}
+          {error && <p className={styles.error}>{error}</p>}
 
-        <div className={styles.pendingSection}>
-          <h3 className={styles.pendingTitle}>Pending Events</h3>
-          {pending.length === 0 ? (
-            <p>No pending events.</p>
+          <div className={styles.pendingSection}>
+            <h3 className={styles.pendingTitle}>Pending Events</h3>
+            {pending.length === 0 ? (
+              <p>No pending events.</p>
+            ) : (
+              <ul className={styles.pendingList}>
+                {pending.map((ev, i) => {
+                  if (ev.type !== "IncomeAdded" && ev.type !== "ExpenseAdded") return null;
+                  return (
+                    <li className={styles.pendingItem} key={i}>
+                      <strong>{ev.payload.description}</strong> — CHF {ev.payload.amount}
+                      <span>
+                        {ev.payload.period.start?.toString().slice(0, 10)} → {ev.payload.period.end?.toString().slice(0, 10)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <h3 className={styles.eventsTitle}>All Events (from EventDB)</h3>
+          {dbEvents.length === 0 ? (
+            <p>No events to display.</p>
           ) : (
-            <ul className={styles.pendingList}>
-              {pending.map((ev, i) => {
-                if (ev.type !== "IncomeAdded" && ev.type !== "ExpenseAdded") return null;
-                return (
-                  <li className={styles.pendingItem} key={i}>
-                    <strong>{ev.payload.description}</strong> — CHF {ev.payload.amount}
-                    <span>
-                      {ev.payload.period.start?.toString().slice(0, 10)} → {ev.payload.period.end?.toString().slice(0, 10)}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+            dbEvents.slice().reverse().map((ev, idx) => (
+              <pre key={idx} className={styles.eventItem}>
+                {JSON.stringify(ev, null, 2)}
+              </pre>
+            ))
           )}
-        </div>
+        </section>
 
-        <h3 className={styles.eventsTitle}>All Events (from EventDB)</h3>
-        {dbEvents.length === 0 ? (
-          <p>No events to display.</p>
-        ) : (
-          dbEvents.slice().reverse().map((ev, idx) => (
-            <pre key={idx} className={styles.eventItem}>
-              {JSON.stringify(ev, null, 2)}
-            </pre>
-          ))
-        )}
-      </section>
-
-      <section className={styles.rightColumn}>
-        <h1>Projection View</h1>
-        <ProjectionPanel />
-      </section>
-    </main>
+        <section className={styles.rightColumn}>
+          <h1>Projection View</h1>
+          <ProjectionPanel />
+        </section>
+      </main>
+    </div>
   );
 }

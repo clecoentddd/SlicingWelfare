@@ -7,7 +7,7 @@ import { projectCalculationEvents} from '../07_CalculationProjection/calculation
 
 export async function retrieveDataForCalculation(changeId, eventId) {
   try {
-    console.log('Starting data retrieval process...');
+    console.log(`Starting data retrieval process for changeId: ${changeId} and eventId: ${eventId}`);
     const resourceDb = await openResourceDB();
     console.log('Resource database opened successfully.');
 
@@ -21,7 +21,10 @@ export async function retrieveDataForCalculation(changeId, eventId) {
     allRows.sort((a, b) => b.month.localeCompare(a.month));
 
     const filteredRows = filterRowsByChangeIdAndStatus(allRows, changeId, eventId);
+    console.log(`Filtered ${filteredRows.length} rows based on changeId and status.`);
+
     const monthlyCalculations = calculateMonthlyBenefits(filteredRows);
+    console.log('Monthly calculations:', monthlyCalculations);
 
     // Create CalculationPerformed event
     const calculationEvent = {
@@ -37,13 +40,14 @@ export async function retrieveDataForCalculation(changeId, eventId) {
     console.log(`CalculationPerformed event stored with eventId: ${calculationEvent.eventId}`);
 
     // Call the projection logic in Slice 07 with the necessary data
-    await projectCalculationEvents(monthlyCalculations, changeId);
+    await projectCalculationEvents(monthlyCalculations, changeId, calculationEvent.type);
     console.log('Projection of calculation events triggered successfully.');
 
   } catch (error) {
     console.error("Error processing data:", error);
   }
 }
+
 
 function filterRowsByChangeIdAndStatus(rows, changeId, eventId) {
   return rows.filter(row => row.changeId === changeId && row.status === "Pushed" && row.EVENT_ID <= eventId);
