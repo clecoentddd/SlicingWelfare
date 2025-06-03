@@ -1,0 +1,45 @@
+/* styles/CalculationViewPage.module.css */
+
+.container {
+  padding: 1rem;
+  font-family: Arial, sans-serif;
+}
+
+.title {
+  color: #333;
+  text-align: center;
+}
+
+.filterContainer {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.filterContainer input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 300px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.tableHeader, .tableData {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.tableHeader {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.tableRow:hover {
+  background-color: #f5f5f5;
+}

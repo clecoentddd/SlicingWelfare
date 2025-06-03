@@ -1,9 +1,6 @@
-// src/slices/commitChanges/addIncomesAndExpenses.ts
-import { ResourceEvent } from "../shared/genericTypes";
-import {
-  createIncomeEvent,
-  createExpenseEvent,
-} from "./incomesAndExpensesEvents";
+// src/slices/commitChanges/addIncomesAndExpenses.js
+
+import { createIncomeEvent, createExpenseEvent } from "./incomesAndExpensesEvents";
 
 const incomeDescriptions = [
   "Code 101: Salary",
@@ -31,7 +28,7 @@ const expenseDescriptions = [
   "Code 210: Miscellaneous",
 ];
 
-function showDescriptionDialog(options: string[]): Promise<string | null> {
+function showDescriptionDialog(options) {
   return new Promise((resolve) => {
     const select = document.createElement("select");
     select.style.width = "100%";
@@ -78,7 +75,7 @@ function showDescriptionDialog(options: string[]): Promise<string | null> {
     confirmButton.style.marginTop = "10px";
     confirmButton.onclick = () => {
       const selectedValue = select.value;
-      modal.remove(); // ✅ Safe modern way to remove element
+      modal.remove();
       resolve(selectedValue || null);
     };
 
@@ -88,8 +85,7 @@ function showDescriptionDialog(options: string[]): Promise<string | null> {
   });
 }
 
-export async function addIncomeCommand(changeId: string): Promise<ResourceEvent | null> {
-
+export async function addIncomeCommand(changeId) {
   if (!changeId) return null;
 
   const description = await showDescriptionDialog(incomeDescriptions);
@@ -110,7 +106,7 @@ export async function addIncomeCommand(changeId: string): Promise<ResourceEvent 
   return createIncomeEvent(changeId, amount, description, startMonth, endMonth);
 }
 
-export async function addExpenseCommand(changeId: string): Promise<ResourceEvent | null> {
+export async function addExpenseCommand(changeId) {
   if (!changeId) return null;
 
   const description = await showDescriptionDialog(expenseDescriptions);

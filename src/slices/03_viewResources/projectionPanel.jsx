@@ -1,22 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { openResourceDB, getAllFromStore } from "./openResourceDB";
+import { openResourceDB, getAllFromStore } from "../shared/openResourceDB";
 import styles from "./projectionPanel.module.css";
 
-type ResourceRow = {
-  month: string;
-  type: string;
-  description: string;
-  amount: number;
-  changeId: string;
-  status: string;
-  timestamp: number;
-  EVENT_ID: number; // Include EVENT_ID in the type definition
-};
-
 export default function ProjectionPanel() {
-  const [grouped, setGrouped] = useState<Record<string, ResourceRow[]>>({});
+  const [grouped, setGrouped] = useState({});
 
   useEffect(() => {
     async function load() {
@@ -24,13 +13,13 @@ export default function ProjectionPanel() {
       const tx = db.transaction("resources", "readonly");
       const store = tx.objectStore("resources");
 
-      const all: ResourceRow[] = await getAllFromStore<ResourceRow>(store);
+      const all = await getAllFromStore(store);
 
       // Sort by timestamp in descending order
       const sorted = all.sort((a, b) => b.timestamp - a.timestamp);
 
       // Group by month
-      const byMonth: Record<string, ResourceRow[]> = {};
+      const byMonth = {};
       for (const row of sorted) {
         if (!byMonth[row.month]) byMonth[row.month] = [];
         byMonth[row.month].push(row);
@@ -42,7 +31,7 @@ export default function ProjectionPanel() {
         .reduce((acc, month) => {
           acc[month] = byMonth[month];
           return acc;
-        }, {} as Record<string, ResourceRow[]>);
+        }, {});
 
       setGrouped(sortedGrouped);
     }

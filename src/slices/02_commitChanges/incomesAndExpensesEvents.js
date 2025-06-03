@@ -1,12 +1,4 @@
-import { ResourceEvent } from "../shared/genericTypes";
-
-export function createIncomeEvent(
-  changeId: string,
-  amount: number,
-  description: string,
-  start: string,
-  end: string
-): ResourceEvent {
+export function createIncomeEvent(changeId, amount, description, start, end) {
   return {
     type: "IncomeAdded",
     timestamp: Date.now(),
@@ -22,13 +14,7 @@ export function createIncomeEvent(
   };
 }
 
-export function createExpenseEvent(
-  changeId: string,
-  amount: number,
-  description: string,
-  start: string,
-  end: string
-): ResourceEvent {
+export function createExpenseEvent(changeId, amount, description, start, end) {
   return {
     type: "ExpenseAdded",
     timestamp: Date.now(),
