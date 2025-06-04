@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { fetchCalculationIds, fetchDecisionsByCalculationId } from "../../slices/08_DecisionsInformation/DecisionsReadModel";
+import { validateDecision } from "../../slices/09_DecisionValidation/ValidateCalculation";
 import Navbar from '../../../components/Navbar';
 import styles from './decision.module.css';
 
@@ -49,6 +50,23 @@ export default function DecisionViewPage() {
     }
   }, [selectedCalculationId]);
 
+  const handleValidateDecision = async () => {
+    if (!selectedCalculationId) {
+      alert('Please select a Calculation ID');
+      return;
+    }
+
+    try {
+      // Assuming the changeId is the same for all decisions with the same calculationId
+      const changeId = decisions.length > 0 ? decisions[0].changeId : '';
+      await validateDecision(selectedCalculationId, changeId);
+      alert('Decision validated successfully!');
+    } catch (error) {
+      console.error("Error validating decision:", error);
+      alert('Failed to validate decision');
+    }
+  };
+
   return (
     <div>
       <Navbar />
@@ -65,6 +83,9 @@ export default function DecisionViewPage() {
               <option key={index} value={id}>{id}</option>
             ))}
           </select>
+          <button onClick={handleValidateDecision} className={styles.validateButton}>
+            Validate Decision
+          </button>
         </div>
         {isLoading ? (
           <div className={styles.loading}>Loading...</div>
