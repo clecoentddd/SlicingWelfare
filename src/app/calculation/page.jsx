@@ -1,7 +1,9 @@
-"use client";
+// src/app/calculation/page.tsx
+
+'use client';
 
 import { useEffect, useState } from 'react';
-import { openCalculationDB } from "../../slices/shared/openCalculationDB";
+import { fetchCalculations, filterCalculations } from "../../slices/07_CalculationProjection/calculationReadModel";
 import styles from './calculation.module.css';
 import Navbar from '../../../components/Navbar'; // Import the Navbar component
 
@@ -12,38 +14,15 @@ export default function CalculationViewPage() {
   const [filterStatus, setFilterStatus] = useState('');
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const db = await openCalculationDB();
-        const tx = db.transaction("monthlyCalculations", "readonly");
-        const store = tx.objectStore("monthlyCalculations");
-
-        const result = await store.getAll();
-
-        // Sort by timestamp (most recent first) and then by month (most recent first)
-        result.sort((a, b) => {
-          if (b.timestamp !== a.timestamp) {
-            return b.timestamp - a.timestamp;
-          }
-          return b.month.localeCompare(a.month);
-        });
-
-        setCalculations(result);
-      } catch (err) {
-        console.error("Failed to fetch from 'monthlyCalculations' store or open CalculationDB:", err);
-      }
+    async function loadData() {
+      const result = await fetchCalculations();
+      setCalculations(result);
     }
 
-    fetchData();
+    loadData();
   }, []);
 
-  const filteredCalculations = calculations.filter(calc => {
-    const matchesCalculationId = calc.calculationId.includes(filterCalculationId);
-    const matchesChangeId = calc.changeId.includes(filterChangeId);
-    const matchesStatus = calc.status ? calc.status.includes(filterStatus) : false;
-
-    return matchesCalculationId && matchesChangeId && (filterStatus === '' || matchesStatus);
-  });
+  const filteredCalculations = filterCalculations(calculations, filterCalculationId, filterChangeId, filterStatus);
 
   return (
     <div>

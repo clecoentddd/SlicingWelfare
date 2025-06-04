@@ -1,23 +1,45 @@
 /* components/Navbar.module.css */
+
 .navbar {
   background-color: #333;
-  padding: 10px 0;
-  font-size: 0.9em;
+  padding: 1rem;
 }
 
 .navContainer {
   display: flex;
-  justify-content: center;
-  gap: 20px;
+  gap: 1rem;
 }
 
 .navLink {
-  color: #fff;
+  color: white;
   text-decoration: none;
-  padding: 5px 10px;
+  padding: 0.5rem 1rem;
+  transition: background-color 0.3s ease;
 }
 
 .navLink:hover {
-  background-color: #575757;
-  border-radius: 4px;
+  background-color: #555;
+}
+
+/* Add an active state for visual feedback */
+.navLink:active {
+  background-color: #777;
+  transform: scale(0.98);
+}
+
+/* Optional: Add a loading animation */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.navLink.loading {
+  animation: pulse 1s ease infinite;
 }
