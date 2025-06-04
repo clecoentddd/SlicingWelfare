@@ -45,6 +45,13 @@ export default function Navbar() {
         >
           Decision
         </Link>
+        <Link
+          href="/globalView"
+          className={`${styles.navLink} ${activeLink === 'globalView' ? styles.loading : ''}`}
+          onClick={() => handleLinkClick('globalView')}
+        >
+          Global View
+        </Link>
       </div>
     </nav>
   );
