@@ -1,11 +1,12 @@
 // src/slices/09_DecisionProjection/DecisionProjection.js
 
-import { openEventDB, getAllFromStore } from "../shared/openEventDB";
-import { openDecisionDB, addToStore } from "../shared/openDecisionDB";
+import { getEventDB } from "../../eventStore/eventDb"
+import {  getAllFromStore } from "../shared/openDecisionDB.js";
+import { openDecisionDB, addToStore } from "../shared/openDecisionDB.js";
 
 export async function projectDecisionEvents() {
   try {
-    const eventDb = await openEventDB();
+    const eventDb = await getEventDB();
     const eventTx = eventDb.transaction("events", "readonly");
     const eventStore = eventTx.objectStore("events");
     const events = await getAllFromStore(eventStore);
