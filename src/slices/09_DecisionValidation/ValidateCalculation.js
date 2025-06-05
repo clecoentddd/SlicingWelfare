@@ -1,9 +1,10 @@
-// src/slices/09_DecisionValidation/ValidateCalculation.js
-
 import { v4 as uuidv4 } from 'uuid';
 import { appendEvent } from '../../eventStore/eventRepository';
+import { publishDecisionApproval } from '../11_DecisionApprovalForPayment/PublishDecisionApproval';
+import { openDecisionDB, addToStore } from "../shared/openDecisionDB.js";
+import { addEventToDecisionProjection } from '../10_DecisionProjection/DecisionProjection.js';
 
-export async function validateDecision(calculationId, changeId) {
+export async function validateDecision(calculationId, changeId, month, amount) {
   try {
     // Create a DecisionCalculationValidated event
     const decisionEvent = {
@@ -14,15 +15,23 @@ export async function validateDecision(calculationId, changeId) {
       payload: {
         decisionId: uuidv4(),
         calculationId,
-        changeId
+        changeId,
+        month,
+        amount
       }
     };
 
-    // Store the DecisionCalculationValidated event in eventDB
-    await appendEvent(decisionEvent);
-    console.log(`DecisionCalculationValidated event stored with eventId: ${decisionEvent.eventId}`);
+    // Use appendEvent to store the DecisionCalculationValidated event in eventDB
+    const storedEvent = await appendEvent(decisionEvent);
+    console.log(`DecisionCalculationValidated event stored with eventId: ${storedEvent.eventId}`);
 
-    return decisionEvent;
+    // Project the stored event to the decision projection
+    await addEventToDecisionProjection(storedEvent);
+
+    // Publish DecisionApprovedForPaymentReconciliation event
+    await publishDecisionApproval(calculationId, changeId, month, amount);
+
+    return storedEvent;
   } catch (error) {
     console.error("Error validating decision:", error);
     throw error;

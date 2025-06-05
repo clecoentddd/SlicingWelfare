@@ -1,0 +1,48 @@
+/* src/app/globalView/globalView.module.css */
+
+.container {
+  padding: 1rem;
+  font-family: Arial, sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  color: #6a0dad; /* Purple theme */
+  text-align: center;
+}
+
+.loading {
+  text-align: center;
+  color: #6a0dad;
+  font-size: 1.2rem;
+  margin: 2rem 0;
+}
+
+.tableContainer {
+  margin-top: 2rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th, .table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.table th {
+  background-color: #0d65ad;
+  color: white;
+}
+
+.table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.table tr:hover {
+  background-color: #ddd;
+}
