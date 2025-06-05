@@ -40,3 +40,51 @@ export async function addToStore(store, value) {
 export async function getAllFromStore(store) {
   return store.getAll();
 }
+
+export async function getAllChangeIdStatuses() {
+  try {
+    console.log('Opening CalculationDB...');
+    const db = await openCalculationDB();
+    console.log('CalculationDB opened successfully.');
+
+    const tx = db.transaction(CALCULATION_STORE_NAME, 'readonly');
+    const store = tx.objectStore(CALCULATION_STORE_NAME);
+    console.log('Fetching all records from CalculationDB...');
+    const calculations = await getAllFromStore(store);
+
+    // Log each calculation entry to verify the structure
+    calculations.forEach((calculation, index) => {
+      console.log(`Calculation Entry ${index}:`, calculation);
+    });
+
+    const changeIdMap = new Map();
+
+    calculations.forEach(calculation => {
+      const { changeId, type } = calculation;
+      console.log(`Processing changeId: ${changeId} with type: ${type}`);
+      if (!changeIdMap.has(changeId)) {
+        changeIdMap.set(changeId, new Set([type]));
+      } else {
+        changeIdMap.get(changeId).add(type);
+      }
+    });
+
+    const changeIdStatuses = {};
+    changeIdMap.forEach((types, changeId) => {
+      if (types.size === 1) {
+        const type = Array.from(types)[0];
+        changeIdStatuses[changeId] = type;
+        console.log(`changeId: ${changeId} has consistent type: ${type}`);
+      } else {
+        console.warn(`changeId ${changeId} has inconsistent types:`, Array.from(types));
+        changeIdStatuses[changeId] = 'Inconsistent';
+      }
+    });
+
+    console.log('Finished processing CalculationDB data.');
+    return changeIdStatuses;
+  } catch (error) {
+    console.error('Error fetching data from CalculationDB:', error);
+    return { error: 'Error fetching data' };
+  }
+}

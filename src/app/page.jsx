@@ -10,7 +10,6 @@ import styles from "./page.module.css";
 import ProjectionPanel from "../slices/03_viewResources/projectionPanel.jsx";
 import { getChangeStatus } from "../slices/shared/getStatus.js";
 import { handleEventForProjection } from '../slices/03_viewResources/handleEventForProjection.js';
-import '../slices/06_CalculationProcessor/calculationProcessor.js';
 import Navbar from '../../components/Navbar';
 import { subscribeToPaymentPlanEvents } from '../slices/12_PaymentPlanListener/SubscribePaymentPlan.js'; // Import the subscriber function
 
