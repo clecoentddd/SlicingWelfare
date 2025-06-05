@@ -9,7 +9,7 @@ export async function addEventToDecisionProjection(storedEvent) {
 
     // Map the event data to the DecisionDB structure
     const decisionEntry = {
-      decisionId: storedEvent.payload.decisionId, // Use decisionId as the primary key
+      decisionId: storedEvent.decisionId, // Use decisionId as the primary key
       calculationId: storedEvent.payload.calculationId,
       changeId: storedEvent.payload.changeId,
       timestamp: storedEvent.timestamp,

@@ -48,6 +48,15 @@ export async function openDecisionDB() {
 
 export async function addToStore(store, value) {
   try {
+    console.log('Attempting to add value to store:', value);
+    console.log('Store key path:', store.keyPath);
+
+    // Check if the value has the key path property
+    if (!value.hasOwnProperty(store.keyPath)) {
+      console.error(`Value does not have the required key path property: ${store.keyPath}`);
+      throw new Error(`Value does not have the required key path property: ${store.keyPath}`);
+    }
+
     const result = await store.add(value);
     console.log('Successfully added to store:', result);
     return result;
@@ -68,7 +77,6 @@ export async function getAllFromStore(store) {
     throw error;
   }
 }
-
 
 export async function getAllChangeIdStatuses() {
   try {

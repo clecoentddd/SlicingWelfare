@@ -30,9 +30,10 @@ export async function retrieveDataForCalculation(changeId, eventId) {
     const calculationEvent = {
       type: "CalculationPerformed",
       calculationId: uuidv4(),
-      timestamp: Date.now(),
+      changeId: changeId,
       aggregate: "Calculation",
-      payload: { changeId, monthlyCalculations }
+      payload: {  monthlyCalculations },
+      timestamp: Date.now()
     };
 
     // Store the CalculationPerformed event in eventDB

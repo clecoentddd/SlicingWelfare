@@ -11,9 +11,10 @@ export async function publishDomainEventDecisionApproved(storedEvent) {
       type: "DecisionApprovedForPaymentReconciliation",
       eventId: uuidv4(),
       timestamp: Date.now(),
-      aggregate: "Payment",
+      aggregate: "Decision",
+      domainEvent: true,
       payload: {
-        decisionId: storedEvent.payload.decisionId,
+        decisionId: storedEvent.decisionId,
         calculationId: storedEvent.payload.calculationId,
         changeId: storedEvent.payload.changeId,
         previousPaymentId: "",

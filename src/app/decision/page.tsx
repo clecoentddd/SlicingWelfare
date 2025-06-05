@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { fetchCalculationIds, fetchDecisionsByCalculationId } from "../../slices/08_DecisionsInformation/DecisionsReadModel";
-import { validateDecision } from "../../slices/09_DecisionValidation/ValidateCalculation";
+import { validationDecisionHandler } from "../../slices/09_DecisionValidation/validationDecisionHandler";
 import Navbar from '../../../components/Navbar';
 import styles from './decision.module.css';
 
@@ -59,7 +59,7 @@ export default function DecisionViewPage() {
     try {
       // Assuming the changeId is the same for all decisions with the same calculationId
       const changeId = decisions.length > 0 ? decisions[0].changeId : '';
-      await validateDecision(selectedCalculationId, changeId);
+      await validationDecisionHandler(selectedCalculationId, changeId);
       alert('Decision validated successfully!');
     } catch (error) {
       console.error("Error validating decision:", error);
