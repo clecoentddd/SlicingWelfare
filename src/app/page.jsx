@@ -1,9 +1,6 @@
-// src/app/page.jsx
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { getEventDB } from "../eventStore/eventDb.js";
-import { EVENT_STORE_NAME } from "../eventStore/eventDbConstants.js";
 import { getAllEvents } from "../eventStore/eventRepository.js";
 import { createChangeHandler } from "../slices/01_createChange/createChangeHandler.js";
 import { addIncomeCommand, addExpenseCommand } from "../slices/02_commitChanges/addIncomesAndExpensesUI.js";
@@ -15,6 +12,7 @@ import { getChangeStatus } from "../slices/shared/getStatus.js";
 import { handleEventForProjection } from '../slices/03_viewResources/handleEventForProjection.js';
 import '../slices/06_CalculationProcessor/calculationProcessor.js';
 import Navbar from '../../components/Navbar';
+import { subscribeToPaymentPlanEvents } from '../slices/12_PaymentPlanListener/SubscribePaymentPlan.js'; // Import the subscriber function
 
 async function fetchAllEventsForDisplay() {
   const events = await getAllEvents();
@@ -46,6 +44,7 @@ export default function Page() {
 
   useEffect(() => {
     loadEventsForDisplay();
+
   }, [loadEventsForDisplay]);
 
   const latestChangeStatus = useMemo(() => {

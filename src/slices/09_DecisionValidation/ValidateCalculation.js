@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { appendEvent } from '../../eventStore/eventRepository';
-import { publishDecisionApproval } from '../11_DecisionApprovalForPayment/PublishDecisionApproval';
+import { publishDomainEventDecisionApproved } from '../11_DecisionApprovalForPayment/PublishDecisionApproval';
 import { openDecisionDB, addToStore } from "../shared/openDecisionDB.js";
 import { addEventToDecisionProjection } from '../10_DecisionProjection/DecisionProjection.js';
 
@@ -29,8 +29,10 @@ export async function validateDecision(calculationId, changeId, month, amount) {
     await addEventToDecisionProjection(storedEvent);
 
     // Publish DecisionApprovedForPaymentReconciliation event
-    await publishDecisionApproval(calculationId, changeId, month, amount);
-
+    console.log('validateDecision: Triggering domain event emission');
+    await publishDomainEventDecisionApproved (storedEvent);
+    console.log('validateDecision: Emitted domain event emission');
+    
     return storedEvent;
   } catch (error) {
     console.error("Error validating decision:", error);

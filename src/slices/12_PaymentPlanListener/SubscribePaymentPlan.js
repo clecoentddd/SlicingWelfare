@@ -1,22 +1,24 @@
 // src/slices/12_PaymentPlanListener/SubscribePaymentPlan.js
+import { eventEmitter } from '../shared/eventEmitter';
+import { appendEvent } from '../../eventStore/eventRepository';
 
-import { openEventDB, getAllFromStore } from '../../eventStore/eventRepository';
+export function subscribeToPaymentPlanEvents() {
+  console.log('Setting up event listener for DecisionApprovedForPaymentReconciliation');
 
-export async function subscribeToPaymentPlanEvents() {
-  try {
-    const eventDb = await openEventDB();
-    const eventTx = eventDb.transaction("events", "readonly");
-    const eventStore = eventTx.objectStore("events");
-    const events = await getAllFromStore(eventStore);
+  eventEmitter.on('DecisionApprovedForPaymentReconciliation', async (event) => {
+    try {
+      console.log("Event received in subscriber:", event);
 
-    // Filter and process DecisionApprovedForPaymentReconciliation events
-    events.forEach(event => {
-      if (event.type === "DecisionApprovedForPaymentReconciliation") {
-        console.log("Received DecisionApprovedForPaymentReconciliation event:", event);
-        // Add your logic here to handle the event, e.g., build the payment plan
-      }
-    });
-  } catch (error) {
-    console.error("Error subscribing to payment plan events:", error);
-  }
+      console.log('Storing received event in EventDB:', event);
+      await appendEvent(event);
+      console.log(`Event stored in EventDB with eventId: ${event.eventId}`);
+
+      console.log("Processing event:", event);
+      // Add your logic here to handle the event, e.g., build the payment plan
+    } catch (error) {
+      console.error("Error handling received event:", error);
+    }
+  });
+
+  console.log("Subscribed to payment plan events. Waiting for events to be emitted...");
 }

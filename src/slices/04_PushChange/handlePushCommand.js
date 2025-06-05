@@ -44,7 +44,7 @@ export async function handlePushCommand(changeId) {
 
     // Publish the DataPushed event using the external handler
     console.log("Ready to publish DataPushed event for changeId:", changeId);
-    await publishPushedDomainEvent(changeId, localDbId);
+    await publishPushedDomainEvent(storedPushEvent);
 
     console.log(`Push command completed for changeId: ${changeId}`);
 
