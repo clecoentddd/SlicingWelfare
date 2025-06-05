@@ -16,7 +16,10 @@ export async function publishDomainEventDecisionApproved(storedEvent) {
         decisionId: storedEvent.payload.decisionId,
         calculationId: storedEvent.payload.calculationId,
         changeId: storedEvent.payload.changeId,
-        previousPaymentId: ""
+        previousPaymentId: "",
+        // Add month and amount from the stored event's payload
+        month: storedEvent.payload.month,
+        amount: storedEvent.payload.amount
       }
     };
 

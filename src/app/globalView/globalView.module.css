@@ -8,13 +8,13 @@
 }
 
 .title {
-  color: #6a0dad; /* Purple theme */
+  color: #0d65ad; /* Purple theme */
   text-align: center;
 }
 
 .loading {
   text-align: center;
-  color: #6a0dad;
+  color: #0d65ad;
   font-size: 1.2rem;
   margin: 2rem 0;
 }

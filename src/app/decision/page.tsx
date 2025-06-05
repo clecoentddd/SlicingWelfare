@@ -23,7 +23,7 @@ interface Decision {
   timestamp: number;
   incomes: number;
   expenses: number;
-  result: number;
+  netAmount: number;
   resources: Resource[];
 }
 
@@ -119,7 +119,7 @@ export default function DecisionViewPage() {
                         <p>No resources found</p>
                       )}
                     </td>
-                    <td>{decision.result}</td>
+                    <td>{decision.netAmount}</td>
                     <td>{decision.type || 'N/A'}</td>
                   </tr>
                 ))}

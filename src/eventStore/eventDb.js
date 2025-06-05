@@ -15,42 +15,46 @@ let dbInstance = null; // To store the singleton database instance
  */
 export async function getEventDB() {
   if (dbInstance) {
-    return dbInstance; // Return existing instance if already open
+    return dbInstance;
   }
 
-  // Open the database using the idb library
   dbInstance = await openDB(DB_NAME, DB_VERSION, {
     upgrade(db, oldVersion, newVersion, transaction) {
-      // This 'upgrade' callback runs when the database is first created
-      // or when the DB_VERSION is incremented.
-
-      // Version 1 upgrade: Create the 'events' object store and its indexes
       if (oldVersion < 1) {
         console.log(`EventDB: Creating object store '${EVENT_STORE_NAME}' for version 1.`);
         const eventStore = db.createObjectStore(EVENT_STORE_NAME, {
-          keyPath: "id",         // 'id' will be the unique key for each event
-          autoIncrement: true,   // Automatically generate 'id' if not provided
+          keyPath: "id",
+          autoIncrement: true,
         });
 
-        // Create an index on 'payload.changeId' to efficiently query events by change ID
-        eventStore.createIndex("byChangeId", "payload.changeId", { unique: false });
-
-        // Create an index on 'timestamp' for sorting or querying by time
+        eventStore.createIndex("byChangeId_old_payload", "payload.changeId", { unique: false });
         eventStore.createIndex("byTimestamp", "timestamp", { unique: false });
+        console.log("EventDB: Version 1 initial indexes created.");
       }
-      // Add any further upgrade steps for future versions here
-      // For example:
-      // if (oldVersion < 2) {
-      //   // Add new index or object store for version 2
-      // }
+
+      if (oldVersion < 2) {
+        console.log(`EventDB: Upgrading to version 2. Adapting indexes for new event format.`);
+        const eventStore = transaction.objectStore(EVENT_STORE_NAME);
+
+        if (eventStore.indexNames.contains("byChangeId_old_payload")) {
+          eventStore.deleteIndex("byChangeId_old_payload");
+          console.log("EventDB: Deleted old 'byChangeId_old_payload' index.");
+        }
+
+        eventStore.createIndex("byChangeId", "changeId", { unique: false });
+        console.log("EventDB: Created new 'byChangeId' index on top-level 'changeId'.");
+
+        eventStore.createIndex("byAggregate", "aggregate", { unique: false });
+        console.log("EventDB: Created 'byAggregate' index.");
+
+        eventStore.createIndex("byAggregateAndChangeId", ["aggregate", "changeId"], { unique: false });
+        console.log("EventDB: Created 'byAggregateAndChangeId' compound index.");
+      }
     },
     blocked() {
-      // This event is fired if a database upgrade is blocked by another open connection
       console.warn('EventDB: Database upgrade blocked. Please close all tabs with this application.');
     },
     blocking() {
-      // This event is fired when a new version of the database is ready,
-      // and other connections are still holding old versions open.
       console.log('EventDB: New database version is available, waiting for other connections to close.');
     }
   });

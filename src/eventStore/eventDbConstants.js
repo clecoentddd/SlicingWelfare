@@ -21,4 +21,4 @@ export const EVENT_STORE_NAME = "events";
  * Increment this number when you make changes to the database schema (e.g., adding/removing object stores, adding/removing indices).
  * @type {number}
  */
-export const DB_VERSION = 3 // Start with 1, increment if schema changes
+export const DB_VERSION = 1 // Start with 1, increment if schema changes

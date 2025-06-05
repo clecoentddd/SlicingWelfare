@@ -1,6 +1,6 @@
 // src/03_viewResources/updateResourceProjection.js
 
-const RESOURCE_STORE_NAME = "resources"; // Consistent constant
+const RESOURCE_STORE_NAME = "resources";
 
 /**
  * Performs the actual database write operations to update the 'resources' projection.
@@ -19,22 +19,44 @@ const RESOURCE_STORE_NAME = "resources"; // Consistent constant
 export async function updateResourceProjection(event, resourceStore) {
     console.log(`Resource Projection Updater: Processing event ${event.id}, type: ${event.type}`);
 
-    const affectedResources = []; // Collects all Resource objects that will be put into the DB
+    const affectedResources = [];
 
     if (event.type === "IncomeAdded" || event.type === "ExpenseAdded") {
-        // Validate event payload for necessary properties
-        if (!event.payload || typeof event.payload.changeId !== 'string' || typeof event.payload.amount !== 'number' || !event.payload.period) {
-            console.warn(`Resource Projection Updater: Invalid payload for ${event.type} (missing changeId, amount, or period). Skipping.`);
+        // Validate event structure, now expecting changeId at the top level
+        if (
+            !event.payload ||
+            typeof event.payload.amount !== 'number' ||
+            !event.payload.period ||
+            typeof event.changeId !== 'string' // FIX: Check changeId directly on the event object
+        ) {
+            console.warn(`Resource Projection Updater: Invalid event structure for ${event.type}. Missing 'amount', 'period' in payload, or top-level 'changeId'. Skipping.`);
             return [];
         }
 
-        const { changeId, amount, description, period } = event.payload;
-        const putPromises = []; // To hold all IndexedDB `put` promises
+        // Extract properties from payload AND the top level event object
+        const { amount, description, period } = event.payload;
+        const { changeId } = event; // FIX: Get changeId directly from the event object
 
+        const putPromises = [];
+
+        // Parse and validate start and end dates
         let currentMonthDate = new Date(period.start);
         const endDate = new Date(period.end);
 
-        currentMonthDate.setDate(1); // Set to the 1st of the month to ensure correct month iteration
+        // ADDED LOGS FOR DEBUGGING START/END DATES
+        console.log(`Projection Debug: Raw Period Start: '${period.start}' -> Parsed Date: ${currentMonthDate}`);
+        console.log(`Projection Debug: Raw Period End: '${period.end}' -> Parsed Date: ${endDate}`);
+
+        if (isNaN(currentMonthDate.getTime()) || isNaN(endDate.getTime())) {
+            console.warn(`Resource Projection Updater: Invalid start or end date for ${event.type}. Skipping.`);
+            return [];
+        }
+        if (currentMonthDate.getTime() > endDate.getTime()) {
+            console.warn(`Resource Projection Updater: Start date (${currentMonthDate.toISOString()}) is after end date (${endDate.toISOString()}) for ${event.type}. Skipping.`);
+            return [];
+        }
+
+        currentMonthDate.setDate(1); // Set to the 1st of the month for consistent iteration
 
         // Loop through each month within the specified period
         while (
@@ -42,42 +64,36 @@ export async function updateResourceProjection(event, resourceStore) {
             (currentMonthDate.getFullYear() === endDate.getFullYear() && currentMonthDate.getMonth() <= endDate.getMonth())
         ) {
             const year = currentMonthDate.getFullYear();
-            // Month is 0-indexed, so add 1 and pad with a leading zero if necessary
             const month = (currentMonthDate.getMonth() + 1).toString().padStart(2, '0');
-            const yearMonthString = `${month}-${year}`; // Format: MM-YYYY (e.g., "01-2025")
+            const yearMonthString = `${month}-${year}`;
 
-            // Create a unique ID for each monthly resource record: Event ID + Month
             const resourceId = `${event.id}-${yearMonthString}`;
 
             const newResource = {
-                id: resourceId, // Unique ID for this specific monthly resource record
-                description: description || 'Unknown', // Use description from event payload
+                id: resourceId,
+                description: description || 'Unknown',
                 amount: amount,
                 type: event.type === "IncomeAdded" ? "Income" : "Expense",
-                timestamp: event.timestamp, // Use the original event's timestamp
+                timestamp: event.timestamp,
                 month: yearMonthString, // The specific month for this resource record
-                status: 'Committed', // All newly created resources start as 'Committed'
-                EVENT_ID: event.id, // Reference the ID of the original event
-                changeId: changeId, // Reference the changeId from the event payload
+                status: 'Committed',
+                EVENT_ID: event.id,
+                changeId: changeId, // This is now correctly from the top-level event property
             };
 
-            // Queue the `put` operation. `put` will add a new record or overwrite if `id` already exists.
             putPromises.push(resourceStore.put(newResource));
-            affectedResources.push(newResource); // Add to our list to be returned
+            affectedResources.push(newResource);
 
-            // Move to the first day of the next month
             currentMonthDate.setMonth(currentMonthDate.getMonth() + 1);
             currentMonthDate.setDate(1);
         }
 
-        // Wait for all IndexedDB `put` operations to complete.
         await Promise.all(putPromises);
         console.log(`Resource Projection Updater: Successfully stored ${affectedResources.length} resources for event ${event.id}.`);
-        return affectedResources; // Return the list of resources that were created/updated
+        return affectedResources;
 
     } else {
-        // Log a warning if the event type is not handled by this projection updater
         console.warn(`Resource Projection Updater: Received unhandled event type for resource projection: ${event.type}. Skipping.`);
-        return []; // Return an empty array if no resources were affected
+        return [];
     }
 }

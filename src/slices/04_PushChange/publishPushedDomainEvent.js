@@ -14,14 +14,12 @@ export async function publishPushedDomainEvent(event) {
   // Create the DataPushed domain event based on the ChangePushed event
   const dataPushedEvent = {
     type: "DataPushed",
+    changeId: event.changeId,
+    domainEvent: true ,
     timestamp: Date.now(),
     payload: {
-      changeId: event.payload.changeId,
       eventId: event.id // Use the id from the ChangePushed event
     },
-    metadata: {
-      domainEvent: true // Add metadata to indicate this is a domain event
-    }
   };
 
   // Store the DataPushed event in the EventDB

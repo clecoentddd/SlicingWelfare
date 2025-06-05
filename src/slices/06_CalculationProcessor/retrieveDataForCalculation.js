@@ -29,7 +29,7 @@ export async function retrieveDataForCalculation(changeId, eventId) {
     // Create CalculationPerformed event
     const calculationEvent = {
       type: "CalculationPerformed",
-      eventId: uuidv4(),
+      calculationId: uuidv4(),
       timestamp: Date.now(),
       aggregate: "Calculation",
       payload: { changeId, monthlyCalculations }
@@ -37,10 +37,10 @@ export async function retrieveDataForCalculation(changeId, eventId) {
 
     // Store the CalculationPerformed event in eventDB
     await appendEvent(calculationEvent);
-    console.log(`CalculationPerformed event stored with eventId: ${calculationEvent.eventId}`);
+    console.log(`CalculationPerformed event stored with calculationId: ${calculationEvent.calculationId}`);
 
     // Call the projection logic in Slice 07 with the necessary data
-    await projectCalculationEvents(monthlyCalculations, changeId, calculationEvent.type);
+    await projectCalculationEvents(calculationEvent.calculationId, monthlyCalculations, changeId, calculationEvent.type);
     console.log('Projection of calculation events triggered successfully.');
 
   } catch (error) {
@@ -72,7 +72,7 @@ function calculateMonthlyBenefits(rows) {
     monthlyCalculations[month] = {
       incomes,
       expenses,
-      result: (incomes - expenses) * 0.1
+      netAmount: (incomes - expenses) * 0.1
     };
   }
 

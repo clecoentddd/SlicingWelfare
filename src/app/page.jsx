@@ -1,11 +1,12 @@
+// src/app/page.jsx
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { getAllEvents } from "../eventStore/eventRepository.js";
 import { createChangeHandler } from "../slices/01_createChange/createChangeHandler.js";
 import { addIncomeCommand, addExpenseCommand } from "../slices/02_commitChanges/addIncomesAndExpensesUI.js";
-import { handlePushCommand } from "../slices/04_PushChange/handlePushCommand.js";
-import { handleCommitCommand } from "../slices/02_commitChanges/handleCommitCommand.js";
+import { pushChangeHandler } from "../slices/04_PushChange/pushChangeHandler.js";
+import { handleCommitCommand } from "../slices/02_commitChanges/commitChangeHandler.js";
 import styles from "./page.module.css";
 import ProjectionPanel from "../slices/03_viewResources/projectionPanel.jsx";
 import { getChangeStatus } from "../slices/shared/getStatus.js";
@@ -31,7 +32,7 @@ export default function Page() {
 
       const latestChangeEvent = events.slice().reverse().find(e => e.type === "ChangeCreated");
       if (latestChangeEvent) {
-        setChangeId(latestChangeEvent.payload.changeId);
+        setChangeId(latestChangeEvent.changeId);
       } else {
         setChangeId(null);
       }
@@ -51,17 +52,34 @@ export default function Page() {
   }, [dbEvents, changeId]);
 
   const handleCreateChange = async () => {
-    setError(null);
+    setError(null); // Clear any previous errors
     try {
       console.log("Calling createChangeHandler from page.jsx...");
 
+      // Call the handler. It will return null if a business rule was violated
+      // (and would have already displayed an alert).
       const storedChangeEvent = await createChangeHandler();
-      setChangeId(storedChangeEvent.payload.changeId);
 
-      await handleEventForProjection(storedChangeEvent);
-      await loadEventsForDisplay();
+      // *** START OF FIX ***
+      // Check if a change event was actually stored before proceeding.
+      if (storedChangeEvent) {
+        // If storedChangeEvent is not null, it means the creation was successful.
+        setChangeId(storedChangeEvent.changeId); // Safely update changeId state
+        await handleEventForProjection(storedChangeEvent); // Safely process event for projection
+        await loadEventsForDisplay(); // Reload all events to update the UI
+      } else {
+        // If storedChangeEvent is null, it means the creation was aborted by a business rule.
+        // The alert message was already displayed by createChange (via createChangeHandler),
+        // so no need to set a local error state or show another alert here.
+        console.log("Change creation was aborted due to a business rule; alert already displayed.");
+      }
+      // *** END OF FIX ***
+
     } catch (err) {
-      console.error("Error in handleCreateChange:", err);
+      // This catch block is for unexpected technical errors that might occur
+      // during the execution of handleCreateChange (e.g., network issues,
+      // unhandled errors in called functions that are not business rule violations).
+      console.error("Unexpected error in handleCreateChange:", err);
       setError(err.stack || err.message || JSON.stringify(err));
     }
   };
@@ -100,7 +118,7 @@ export default function Page() {
       return;
     }
     try {
-      await handlePushCommand(changeId);
+      await pushChangeHandler(changeId);
       await loadEventsForDisplay();
     } catch (error) {
       setError(error.message);
@@ -158,7 +176,7 @@ export default function Page() {
         </section>
 
         <section className={styles.rightColumn}>
-          <h1>Projection View</h1>
+          <h1>Resources</h1>
           <ProjectionPanel />
         </section>
       </main>

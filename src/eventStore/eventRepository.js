@@ -15,21 +15,19 @@ import { v4 as uuidv4 } from 'uuid'; // Import UUID generator
  * @returns {Promise<Object>} A promise that resolves with the stored event object,
  * now including its generated IndexedDB 'id' and 'eventId'.
  */
+
 export async function appendEvent(event) {
   const db = await getEventDB();
   const tx = db.transaction(EVENT_STORE_NAME, "readwrite");
   const store = tx.objectStore(EVENT_STORE_NAME);
 
-  // Prepare the event for storage:
-  // 1. Assign a globally unique eventId if it doesn't already have one.
-  // 2. Ensure a timestamp is present.
-  // 3. DO NOT set the 'id' here, let IndexedDB autoIncrement handle it.
   const eventToStore = {
-    ...event,
-    eventId: event.eventId || uuidv4(), // Assign a UUID for global uniqueness
-    timestamp: event.timestamp || Date.now(), // Ensure timestamp is present
+    ...event, // Spread all existing properties from the input 'event'
+    eventId: event.eventId || uuidv4(), // Assign a UUID for global uniqueness if not present
+    timestamp: event.timestamp || Date.now(), // Ensure timestamp is present if not present
   };
 
+  console.log(`[EventDB DEBUG] Appending event: ${JSON.stringify(eventToStore, null, 2)}`); // Use JSON.stringify for better logging
   const generatedId = await store.add(eventToStore); // Add event to store, gets IndexedDB's local 'id'
   const storedEventWithLocalId = { ...eventToStore, id: generatedId }; // Combine for return
 
@@ -88,4 +86,29 @@ export async function getAllEvents() {
  */
 export function hasId(event) {
   return typeof event.id === 'number';
+}
+
+// Function to retrieve an event by calculationId
+// Function to retrieve an event by calculationId
+export async function getCalculationById(calculationId) {
+  console.log(`Starting to retrieve calculation with ID: ${calculationId}`);
+
+  // Retrieve all events using the existing getAllEvents function
+  const events = await getAllEvents();
+
+  console.log(`Filtering events to find CalculationPerformed with calculationId: ${calculationId}`);
+
+  // Filter events to find the CalculationPerformed event with the matching calculationId
+  const calculationEvent = events.find(event =>
+    event.type === "CalculationPerformed" &&
+    event.calculationId === calculationId
+  );
+
+  if (calculationEvent) {
+    console.log('Calculation event found:', calculationEvent);
+  } else {
+    console.log('No calculation event found with the given calculationId.');
+  }
+
+  return calculationEvent;
 }

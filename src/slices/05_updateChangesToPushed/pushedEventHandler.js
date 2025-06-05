@@ -5,7 +5,8 @@ import { openResourceDB } from '../shared/openResourceDB.js'; // Ensure this pat
 const RESOURCE_STORE_NAME = "resources"; // This must match the name used in openResourceDB.js
 
 export async function pushedEventHandler(ev) {
-  const { changeId, status } = ev.payload;
+  const { changeId } = ev; // Get changeId directly from the event object
+  const { status } = ev.payload; // Get status from the event's payload
   const currentEventNumericId = ev.id; // Use the numeric 'id' field for comparison
   const currentEventId = ev.eventId; // Using the UUID as the unique event identifier
 

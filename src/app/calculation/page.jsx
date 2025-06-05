@@ -70,7 +70,7 @@ export default function CalculationViewPage() {
                 <td className={styles.tableData}>{calc.month}</td>
                 <td className={styles.tableData}>{calc.incomes}</td>
                 <td className={styles.tableData}>{calc.expenses}</td>
-                <td className={styles.tableData}>{calc.result}</td>
+                <td className={styles.tableData}>{calc.netAmount}</td>
                 <td className={styles.tableData}>{calc.type || 'N/A'}</td>
                 <td className={styles.tableData}>{new Date(calc.timestamp).toLocaleString()}</td>
               </tr>

@@ -1,12 +1,31 @@
 import { v4 as uuidv4 } from 'uuid';
 import { appendEvent } from '../../eventStore/eventRepository';
 import { publishDomainEventDecisionApproved } from '../11_DecisionApprovalForPayment/PublishDecisionApproval';
-import { openDecisionDB, addToStore } from "../shared/openDecisionDB.js";
+import { getCalculationById } from "../../eventStore/eventRepository";
 import { addEventToDecisionProjection } from '../10_DecisionProjection/DecisionProjection.js';
 
 export async function validateDecision(calculationId, changeId, month, amount) {
   try {
-    // Create a DecisionCalculationValidated event
+   // Retrieve the CalculationPerformed event to get the monthly calculations
+   console.log(`validateDecision: Retrieving CalculationPerformed event for calculationId: ${calculationId}`); 
+   const calculationEvent = await getCalculationById(calculationId);
+    if (!calculationEvent) {
+      throw new Error(`CalculationPerformed event not found for calculationId: ${calculationId}`);
+    }
+    console.log(`validateDecision: CalculationPerformed event retrieved successfully for calculationId: ${calculationId}`);
+    
+    const { monthlyCalculations } = calculationEvent.payload;
+    if (!monthlyCalculations) {
+      throw new Error(`monthlyCalculations not found in CalculationPerformed event`);
+    }
+
+    // Aggregate monthly calculations into a single payload
+    const aggregatedCalculations = Object.entries(monthlyCalculations).map(([month, calculation]) => ({
+      month,
+      ...calculation
+    }));
+
+    // Create a single DecisionCalculationValidated event
     const decisionEvent = {
       type: "DecisionCalculationValidated",
       eventId: uuidv4(),
@@ -16,8 +35,7 @@ export async function validateDecision(calculationId, changeId, month, amount) {
         decisionId: uuidv4(),
         calculationId,
         changeId,
-        month,
-        amount
+        calculations: aggregatedCalculations // Include all monthly calculations
       }
     };
 
@@ -32,7 +50,7 @@ export async function validateDecision(calculationId, changeId, month, amount) {
     console.log('validateDecision: Triggering domain event emission');
     await publishDomainEventDecisionApproved (storedEvent);
     console.log('validateDecision: Emitted domain event emission');
-    
+
     return storedEvent;
   } catch (error) {
     console.error("Error validating decision:", error);

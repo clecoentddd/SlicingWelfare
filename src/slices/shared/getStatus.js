@@ -16,7 +16,7 @@ export function getChangeStatus(events, changeId) { // Removed type annotations
     return "None";
   }
 
-  const changeEvents = events.filter(event => event.payload.changeId === changeId);
+  const changeEvents = events.filter(event => event.changeId === changeId);
 
   // Log each event for debugging (commented out as in original)
   changeEvents.forEach((event, index) => {

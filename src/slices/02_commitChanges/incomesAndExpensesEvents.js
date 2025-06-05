@@ -1,9 +1,10 @@
 export function createIncomeEvent(changeId, amount, description, start, end) {
   return {
     type: "IncomeAdded",
+    changeId: changeId,
+    aggregate: "Resource",
     timestamp: Date.now(),
     payload: {
-      changeId,
       amount,
       description,
       period: {
@@ -17,9 +18,10 @@ export function createIncomeEvent(changeId, amount, description, start, end) {
 export function createExpenseEvent(changeId, amount, description, start, end) {
   return {
     type: "ExpenseAdded",
+    changeId: changeId,
+    aggregate: "Resource",
     timestamp: Date.now(),
     payload: {
-      changeId,
       amount,
       description,
       period: {
