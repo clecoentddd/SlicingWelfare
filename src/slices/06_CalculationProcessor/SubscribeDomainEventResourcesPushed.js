@@ -1,31 +1,47 @@
-// src/slices/06_CalculationProcessor/SubscribeResourcesPushed.js
-
 import { eventEmitter } from '../shared/eventEmitter';
 import { retrieveDataForCalculation } from './retrieveDataForCalculation';
 
 export function subscribeToResourcesPushed() {
   const handleDataPushed = (event) => {
-    console.log('Event received:', event); // Log the entire event for debugging purposes
+    console.log('Event received in subscriber:', event);
 
-    if (event.metadata && event.metadata.domainEvent) {
-      console.log('Domain event detected in metadata.');
+    // Check if the event is valid and has the expected structure
+    if (!event) {
+      console.error('No event received');
+      return;
+    }
 
-      // Log the changeId and event.id for clarity
-      const changeId = event.payload.changeId;
-      const eventId = event.id;
+    // Check the top-level 'domainEvent' flag directly
+    if (event.domainEvent === true) {
+      console.log('Top-level domain event flag detected.');
 
-      console.log(`DataPushed domain event received with changeId = ${changeId} and event.id = ${eventId}`);
+      // Extract necessary IDs
+      const changeId = event.changeId;
+      const eventIdForCalculation = event.payload?.eventId; // Optional chaining to safely access nested properties
+      const internalEventStoreId = event.id;
+
+      if (!changeId || !eventIdForCalculation) {
+        console.error('Missing changeId or eventId in the event payload');
+        return;
+      }
+
+      console.log(`DataPushed domain event received: changeId = ${changeId}, payload.eventId = ${eventIdForCalculation}, internalEventStoreId = ${internalEventStoreId}`);
 
       // Log the action being taken
-      console.log(`Retrieving data for calculation with changeId: ${changeId} and eventId: ${eventId}`);
+      console.log(`Retrieving data for calculation with changeId: ${changeId} and eventId: ${eventIdForCalculation}`);
 
       // Call the function to retrieve data for calculation
-      retrieveDataForCalculation(changeId, eventId);
+      retrieveDataForCalculation(changeId, eventIdForCalculation);
     } else {
-      console.log('Event received without domain event metadata, skipping processing.');
+      console.log('Event received without top-level domainEvent flag set to true, skipping processing.');
     }
   };
 
-  // Additional code to subscribe to the event source would go here
-  console.log('Subscribed to ResourcesPushed events.');
+  // The event type is "DataPushed"
+  const EVENT_NAME_TO_SUBSCRIBE = 'DataPushed';
+
+  // Ensure you are actually subscribing
+  eventEmitter.on(EVENT_NAME_TO_SUBSCRIBE, handleDataPushed);
+
+  console.log(`Subscribed to '${EVENT_NAME_TO_SUBSCRIBE}' events.`);
 }

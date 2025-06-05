@@ -31,5 +31,5 @@ export async function publishPushedDomainEvent(event) {
   // Emit the DataPushed domain event
   eventEmitter.emit('DataPushed', dataPushedEvent);
 
-  console.log(`Published DataPushed domain event for changeId: ${event.payload.changeId}`);
+  console.log(`Published DataPushed domain event for changeId: ${event.changeId}`);
 }
