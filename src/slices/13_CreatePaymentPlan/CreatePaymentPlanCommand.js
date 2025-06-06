@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { getLatestPaymentPlan } from '../shared/openPaymentPlanDB';
 import { appendEvent } from '../../eventStore/eventRepository';
 
 export async function preparePaymentPlan(monthlyCalculations, previousPaymentId, decisionId) {
@@ -9,7 +10,7 @@ export async function preparePaymentPlan(monthlyCalculations, previousPaymentId,
   // Retrieve the latest payment plan to verify the previousPaymentId
   const latestPaymentPlan = await getLatestPaymentPlan();
 
-  if (latestPaymentPlan && latestPaymentPlan.paymentId !== previousPaymentId) {
+  if (latestPaymentPlan && latestPaymentPlan.paymentPlanId !== previousPaymentId) {
     const rejectionEvent = {
       type: "DecisionValidationRejected",
       eventId: uuidv4(),
@@ -34,19 +35,36 @@ export async function preparePaymentPlan(monthlyCalculations, previousPaymentId,
 
     // If the payment month is before the current month and year, set payment date to immediate
     if (year < currentYear || (year === currentYear && monthNum < currentMonth)) {
-      return { month, amount, paymentDate: 'Immediate' };
+      return {
+        paymentId: uuidv4(), // Generate a unique paymentId for each payment
+        month,
+        amount,
+        paymentDate: 'Immediate',
+        status: 'To be processed' // Initial status
+      };
     } else {
       // Set payment date to the end of the month
       paymentDate.setMonth(paymentDate.getMonth() + 1);
       paymentDate.setDate(0); // Set to the last day of the month
       const formattedDate = paymentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-      return { month, amount, paymentDate: formattedDate };
+      return {
+        paymentId: uuidv4(), // Generate a unique paymentId for each payment
+        month,
+        amount,
+        paymentDate: formattedDate,
+        status: 'To be processed' // Initial status
+      };
     }
   });
 
   // Transform the payments array into the desired object structure
-  const formattedPayments = payments.reduce((acc, { month, amount, paymentDate }) => {
-    acc[month] = { Payment: amount, Date: paymentDate };
+  const formattedPayments = payments.reduce((acc, payment) => {
+    acc[payment.month] = {
+      paymentId: payment.paymentId,
+      Payment: payment.amount,
+      Date: payment.paymentDate,
+      Status: payment.status
+    };
     return acc;
   }, {});
 
@@ -61,9 +79,4 @@ export async function preparePaymentPlan(monthlyCalculations, previousPaymentId,
       payments: formattedPayments,
     },
   };
-}
-
-export async function getLatestPaymentPlan() {
-  // For now, just return null to simulate no previous payment plan existing
-  return null;
 }

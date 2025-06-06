@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { getAllChangeIdStatuses as getResourceStatuses } from '../../slices/shared/openResourceDB';
 import { getAllChangeIdStatuses as getCalculationStatuses } from '../../slices/shared/openCalculationDB';
 import { getAllChangeIdStatuses as getDecisionStatuses } from '../../slices/shared/openDecisionDB';
-import { getLatestPaymentPlan } from '../../slices/14_PaymentPlanProjection/PaymentPlanProjection';
+import { getLatestPaymentPlan } from '../../slices/shared/openPaymentPlanDB';
 import Navbar from '../../../components/Navbar';
 import styles from './globalView.module.css';
 
