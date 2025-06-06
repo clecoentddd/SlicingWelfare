@@ -45,6 +45,13 @@ export default function Navbar() {
         >
           Decision
         </Link>
+          <Link
+          href="/paymentPlan"
+          className={`${styles.navLink} ${activeLink === 'paymentPlan' ? styles.loading : ''}`}
+          onClick={() => handleLinkClick('paymentPlan')}
+        >
+          Payment Plan
+        </Link>
         <Link
           href="/globalView"
           className={`${styles.navLink} ${activeLink === 'globalView' ? styles.loading : ''}`}

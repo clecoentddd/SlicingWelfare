@@ -2,10 +2,18 @@
 import { v4 as uuidv4 } from 'uuid';
 import { appendEvent } from '../../eventStore/eventRepository';
 import { eventEmitter } from '../shared/eventEmitter';
+import { getMonthlyCalculationsByCalculationId } from '../07_CalculationProjection/calculationReadModel';
 
 export async function publishDomainEventDecisionApproved(storedEvent) {
   try {
     console.log('Creating domain event from stored event:', storedEvent);
+
+    // Retrieve monthly calculations from the projection
+    const monthlyCalculations = await getMonthlyCalculationsByCalculationId(storedEvent.payload.calculationId);
+
+    if (Object.keys(monthlyCalculations).length === 0) {
+      throw new Error("Calculation Projection: missing calculationId - Rebuild your projection!");
+    }
 
     const domainEvent = {
       type: "DecisionApprovedForPaymentReconciliation",
@@ -19,8 +27,7 @@ export async function publishDomainEventDecisionApproved(storedEvent) {
         changeId: storedEvent.payload.changeId,
         previousPaymentId: "",
         // Add month and amount from the stored event's payload
-        month: storedEvent.payload.month,
-        amount: storedEvent.payload.amount
+        payments: monthlyCalculations,
       }
     };
 

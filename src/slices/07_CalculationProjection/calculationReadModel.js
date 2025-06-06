@@ -34,3 +34,37 @@ export function filterCalculations(calculations, filterCalculationId, filterChan
     return matchesCalculationId && matchesChangeId && (filterStatus === '' || matchesStatus);
   });
 }
+
+export async function getMonthlyCalculationsByCalculationId(calculationId) {
+  try {
+    console.log(`Fetching calculations for calculationId: ${calculationId}`);
+    const calculations = await fetchCalculations();
+    console.log('All calculations:', calculations);
+
+    // Filter calculations by calculationId
+    const filteredCalculations = calculations.filter(calc => calc.calculationId === calculationId);
+    console.log(`Filtered calculations for calculationId ${calculationId}:`, filteredCalculations);
+
+    if (filteredCalculations.length === 0) {
+      console.warn(`No calculations found for calculationId: ${calculationId}`);
+      return {};
+    }
+
+    // Use netAmount instead of amount
+    const monthlyCalculations = filteredCalculations.reduce((acc, calc) => {
+      console.log(`Processing calculation for month: ${calc.month} with netAmount: ${calc.netAmount}`);
+      if (calc.netAmount === undefined) {
+        console.warn(`netAmount is undefined for month: ${calc.month}`);
+      }
+      acc[calc.month] = calc.netAmount;
+      return acc;
+    }, {});
+
+    console.log(`Monthly calculations for calculationId ${calculationId}:`, monthlyCalculations);
+    return monthlyCalculations;
+  } catch (err) {
+    console.error("Failed to fetch monthly calculations by calculationId:", err);
+    return {};
+  }
+}
+

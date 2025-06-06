@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect } from 'react';
-import { subscribeToPaymentPlanEvents } from '../slices/12_PaymentPlanListener/SubscribePaymentPlan';
+import { subscribeToPaymentPlanEvents } from '../slices/12_PaymentPlanListener/SubscribingToNewDecision';
 import { subscribeToResourcesPushed } from '../slices/06_CalculationProcessor/SubscribeDomainEventResourcesPushed';
 
 export default function EventSubscriber() {
