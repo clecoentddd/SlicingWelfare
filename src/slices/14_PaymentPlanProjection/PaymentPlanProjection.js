@@ -8,7 +8,8 @@ export async function handlePaymentPlanEventForProjection(event) {
   switch (event.type) {
     case "PaymentPlanPrepared":
       await store.put({
-        paymentId: event.eventId,
+        paymentPlanId: event.paymentPlanId,
+        decisionId: event.decisionId,
         previousPaymentId: event.payload.previousPaymentId,
         payments: event.payload.payments,
         timestamp: event.timestamp

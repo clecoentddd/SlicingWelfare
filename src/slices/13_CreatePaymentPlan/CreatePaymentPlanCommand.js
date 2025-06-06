@@ -52,7 +52,8 @@ export async function preparePaymentPlan(monthlyCalculations, previousPaymentId,
 
   return {
     type: "PaymentPlanPrepared",
-    eventId: uuidv4(),
+    paymentPlanId: uuidv4(),
+    decisionId: decisionId,
     timestamp: Date.now(),
     aggregate: "Payment",
     payload: {
