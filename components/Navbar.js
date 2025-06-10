@@ -24,19 +24,19 @@ export default function Navbar() {
         >
           Home
         </Link>
+                <Link
+          href="/resources"
+          className={`${styles.navLink} ${activeLink === 'resources' ? styles.loading : ''}`}
+          onClick={() => handleLinkClick('resources')}
+        >
+          Resources
+        </Link>
         <Link
           href="/calculation"
           className={`${styles.navLink} ${activeLink === 'calculation' ? styles.loading : ''}`}
           onClick={() => handleLinkClick('calculation')}
         >
           Calculations
-        </Link>
-        <Link
-          href="/resources"
-          className={`${styles.navLink} ${activeLink === 'resources' ? styles.loading : ''}`}
-          onClick={() => handleLinkClick('resources')}
-        >
-          Resources
         </Link>
         <Link
           href="/decision"
@@ -53,11 +53,11 @@ export default function Navbar() {
           Payment Plan
         </Link>
         <Link
-          href="/globalView"
-          className={`${styles.navLink} ${activeLink === 'globalView' ? styles.loading : ''}`}
-          onClick={() => handleLinkClick('globalView')}
+          href="/"
+          className={`${styles.navLink} ${activeLink === 'monitoring' ? styles.loading : ''}`}
+          onClick={() => handleLinkClick('monitoring')}
         >
-          Global View
+          Monitoring
         </Link>
       </div>
     </nav>

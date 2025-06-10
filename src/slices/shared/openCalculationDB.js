@@ -88,3 +88,17 @@ export async function getAllChangeIdStatuses() {
     return { error: 'Error fetching data' };
   }
 }
+
+
+export async function fetchCalculations() {
+  try {
+    const db = await openCalculationDB();
+    const tx = db.transaction(CALCULATION_STORE_NAME, 'readonly');
+    const store = tx.objectStore(CALCULATION_STORE_NAME);
+    return await getAllFromStore(store);
+  } catch (err) {
+    console.error("Failed to fetch calculations:", err);
+    return [];
+  }
+}
+

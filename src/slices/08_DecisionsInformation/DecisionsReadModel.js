@@ -1,55 +1,44 @@
 // src/slices/08_DecisionsInformation/DecisionsReadModel.js
 
-import { openCalculationDB } from "../shared/openCalculationDB";
-import { openResourceDB } from "../shared/openResourceDB";
+import { fetchCalculations } from '../shared/openCalculationDB';
+import { fetchDecisions } from '../shared/openDecisionDB';
+
+// Cache for calculations to avoid redundant fetches
+let calculationsCache = null;
 
 export async function fetchCalculationIds() {
   try {
-    const calculationDb = await openCalculationDB();
-    const calculationTx = calculationDb.transaction("monthlyCalculations", "readonly");
-    const calculationStore = calculationTx.objectStore("monthlyCalculations");
-    const calculations = await calculationStore.getAll();
-
-    // Extract unique calculationIds
-    const uniqueCalculationIds = [...new Set(calculations.map(calc => calc.calculationId))];
-    return uniqueCalculationIds;
+    if (!calculationsCache) {
+      calculationsCache = await fetchCalculations();
+    }
+    const ids = [...new Set(calculationsCache.map(calc => calc.calculationId))];
+    return ids;
   } catch (err) {
     console.error("Failed to fetch calculation IDs:", err);
     return [];
   }
 }
 
-export async function fetchDecisionsByCalculationId(calculationId) {
+export async function fetchCalculationsByCalculationId(calculationId) {
   try {
-    // Fetch calculations from calculationDB
-    const calculationDb = await openCalculationDB();
-    const calculationTx = calculationDb.transaction("monthlyCalculations", "readonly");
-    const calculationStore = calculationTx.objectStore("monthlyCalculations");
-    const calculations = await calculationStore.getAll();
-
-    // Filter calculations by calculationId
-    const filteredCalculations = calculations.filter(calc => calc.calculationId === calculationId);
-
-    // Fetch resources from resourceDB
-    const resourceDb = await openResourceDB();
-    const resourceTx = resourceDb.transaction("resources", "readonly");
-    const resourceStore = resourceTx.objectStore("resources");
-    const resources = await resourceStore.getAll();
-
-    // Match resources with calculations based on changeId and month
-    const decisions = filteredCalculations.map(calc => {
-      const matchedResources = resources.filter(resource =>
-        resource.changeId === calc.changeId && resource.month === calc.month
-      );
-      return {
-        ...calc,
-        resources: matchedResources
-      };
-    });
-
-    return decisions;
+    if (!calculationsCache) {
+      calculationsCache = await fetchCalculations();
+    }
+    return calculationsCache.filter(calc => calc.calculationId === calculationId);
   } catch (err) {
-    console.error("Failed to fetch decisions:", err);
+    console.error("Failed to fetch calculations by calculation ID:", err);
+    return [];
+  }
+}
+
+export async function fetchAndSortDecisionsByCalculationId(calculationId) {
+  try {
+    const decisions = await fetchDecisions();
+    const filteredDecisions = decisions.filter(decision => decision.calculationId === calculationId);
+    const sortedDecisions = [...filteredDecisions].sort((a, b) => a.timestamp - b.timestamp);
+    return sortedDecisions;
+  } catch (err) {
+    console.error("Failed to fetch and sort decisions:", err);
     return [];
   }
 }

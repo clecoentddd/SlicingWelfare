@@ -2,7 +2,7 @@ import { preparePaymentPlan } from './CreatePaymentPlanCommand.js';
 import { appendEvent } from '../../eventStore/eventRepository';
 import { handlePaymentPlanEventForProjection } from '../14_PaymentPlanProjection/PaymentPlanProjection.js';
 
-export async function DecisionApprovedForPaymentReconciliationHandler(domainEvent) {
+export async function createPaymentPlanHandler(domainEvent) {
   try {
     console.log('Handling domain event:', domainEvent);
 

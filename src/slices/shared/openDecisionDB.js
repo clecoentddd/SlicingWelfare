@@ -96,12 +96,17 @@ export async function getAllChangeIdStatuses() {
     console.log('Processing records to map changeId to statuses...');
 
     decisions.forEach(decision => {
-      const { changeId, status } = decision; // Use status instead of decisionTaken
-      console.log(`Processing changeId: ${changeId} with status: ${status}`);
-      if (!changeIdMap.has(changeId)) {
-        changeIdMap.set(changeId, new Set([status]));
+      const { changeId, status } = decision;
+
+      if (changeId && status) {
+        console.log(`Processing changeId: ${changeId} with status: ${status}`);
+        if (!changeIdMap.has(changeId)) {
+          changeIdMap.set(changeId, new Set([status]));
+        } else {
+          changeIdMap.get(changeId).add(status);
+        }
       } else {
-        changeIdMap.get(changeId).add(status);
+        console.warn('Skipping event due to missing changeId or status:', decision);
       }
     });
 
@@ -123,5 +128,18 @@ export async function getAllChangeIdStatuses() {
   } catch (error) {
     console.error('Error fetching data from DecisionDB:', error);
     return { error: 'Error fetching data' };
+  }
+}
+
+// Function to fetch all decisions from the DecisionDB
+export async function fetchDecisions() {
+  try {
+    const db = await openDecisionDB();
+    const tx = db.transaction(DECISION_STORE_NAME, 'readonly');
+    const store = tx.objectStore(DECISION_STORE_NAME);
+    return await getAllFromStore(store);
+  } catch (err) {
+    console.error("Failed to fetch decisions:", err);
+    return [];
   }
 }

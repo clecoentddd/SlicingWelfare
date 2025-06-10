@@ -11,8 +11,14 @@ const PaymentPlanUI = () => {
 
   useEffect(() => {
     const fetchPaymentPlan = async () => {
-      const latestPaymentPlan = await getLatestPaymentPlan();
-      setPaymentPlan(latestPaymentPlan);
+      try {
+        console.log('Fetching payment plan...'); // Log before fetching
+        const latestPaymentPlan = await getLatestPaymentPlan();
+        console.log('Fetched Payment Plan:', latestPaymentPlan); // Log the fetched payment plan
+        setPaymentPlan(latestPaymentPlan);
+      } catch (error) {
+        console.error('Error fetching payment plan:', error); // Log any errors
+      }
     };
 
     fetchPaymentPlan();
@@ -21,11 +27,12 @@ const PaymentPlanUI = () => {
   const handleProcessPayments = async () => {
     if (paymentPlan) {
       try {
+        console.log('Processing Payment Plan:', paymentPlan);
         const processedPayments = await processPayments(paymentPlan);
         console.log('Processed Payments:', processedPayments);
         alert(`Processed ${processedPayments.length} payments.`);
       } catch (error) {
-        console.error("Error processing payments:", error);
+        console.error('Error processing payments:', error);
         alert("Error processing payments. Please check the console for details.");
       }
     } else {
@@ -40,28 +47,31 @@ const PaymentPlanUI = () => {
         <h1 className={styles.paymentPlanTitle}>Payment Plan</h1>
         {paymentPlan ? (
           <div className={styles.paymentPlanDetails}>
-            <h2 className={styles.paymentPlanId}>Payment Plan ID: {paymentPlan.paymentPlanId}</h2>
-            <h3 className={styles.paymentsSubtitle}>Payments:</h3>
             <table className={styles.paymentTable}>
               <thead>
                 <tr>
+                  <th>Payment ID</th>
+                  <th>Decision ID</th>
                   <th>Month</th>
                   <th>Amount</th>
                   <th>Date</th>
                   <th>Status</th>
-                  <th>Payment ID</th>
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(paymentPlan.payments).map(([month, details]) => (
-                  <tr key={details.paymentId}>
-                    <td>{month}</td>
-                    <td>{details.Payment}</td>
-                    <td>{details.Date}</td>
-                    <td>{details.Status}</td>
-                    <td>{details.paymentId}</td>
-                  </tr>
-                ))}
+                {Object.entries(paymentPlan.payments || {}).map(([month, details]) => {
+                  console.log('Payment Details for Month', month, ':', details);
+                  return (
+                    <tr key={month}>
+                      <td>{details?.paymentId || 'N/A'}</td>
+                      <td>{paymentPlan.decisionId || 'N/A'}</td>
+                      <td>{month}</td>
+                      <td>{details?.Payment || 'N/A'}</td>
+                      <td>{details?.Date || 'N/A'}</td>
+                      <td>{details?.Status || 'N/A'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             <button onClick={handleProcessPayments} className={styles.processButton}>

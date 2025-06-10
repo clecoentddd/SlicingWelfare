@@ -12,7 +12,6 @@ import ProjectionPanel from "../slices/03_viewResources/projectionPanel.jsx";
 import { getChangeStatus } from "../slices/shared/getStatus.js";
 import { handleEventForProjection } from '../slices/03_viewResources/handleEventForProjection.js';
 import Navbar from '../../components/Navbar';
-import { subscribeToPaymentPlanEvents } from '../slices/12_PaymentPlanListener/SubscribingToNewDecision.js'; // Import the subscriber function
 
 async function fetchAllEventsForDisplay() {
   const events = await getAllEvents();
