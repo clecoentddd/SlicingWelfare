@@ -12,7 +12,7 @@ export async function createPaymentPlanHandler(domainEvent) {
     const event = await preparePaymentPlan(payments, previousPaymentId, decisionId);
 
     if (event.type === "DecisionValidationRejected") {
-      console.log('Decision validation rejected:', event);
+      alert('Decision validation rejected:', event);
       return event;
     }
 

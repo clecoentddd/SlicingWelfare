@@ -166,3 +166,36 @@ export const clearPaymentPlansDB = async () => {
   });
 };
 
+export const fetchPaymentsByStatus = async () => {
+  let db;
+  try {
+    db = await openPaymentPlanDB();
+  } catch (error) {
+    console.error('Failed to open database:', error);
+    return [];
+  }
+
+  return new Promise((resolve) => {
+    const tx = db.transaction("paymentPlans", "readonly");
+    const store = tx.objectStore("paymentPlans");
+
+    const request = store.getAll();
+
+    request.onsuccess = (event) => {
+      const allPayments = event.target.result;
+
+      // Filter payments based on status
+      const filteredPayments = allPayments.filter(payment =>
+        payment.Status === 'PaymentToBeProcessed' || payment.Status === 'PaymentProcessed'
+      );
+
+      console.log('Fetched filtered payments:', filteredPayments);
+      resolve(filteredPayments);
+    };
+
+    request.onerror = (event) => {
+      console.error('Failed to retrieve payments:', event.target.error);
+      resolve([]);
+    };
+  });
+};
