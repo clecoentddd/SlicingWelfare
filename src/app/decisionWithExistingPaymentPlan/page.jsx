@@ -13,7 +13,23 @@ export default function DecisionViewPage() {
   useEffect(() => {
     setIsLoading(true);
     fetchAndMergeCalculationPaymentData().then((mergedDataResult) => {
-      setMergedData(mergedDataResult);
+      // Sort the merged data by month in descending order
+      const sortedData = mergedDataResult.sort((a, b) => {
+        const [aMonth, aYear] = a.month.split('-').map(Number);
+        const [bMonth, bYear] = b.month.split('-').map(Number);
+
+        // Compare years first, then months
+        if (aYear !== bYear) {
+          return bYear - aYear;
+        } else {
+          return bMonth - aMonth;
+        }
+      });
+
+      setMergedData(sortedData);
+      setIsLoading(false);
+    }).catch(error => {
+      console.error('Error fetching merged data:', error);
       setIsLoading(false);
     });
   }, []);
@@ -26,9 +42,14 @@ export default function DecisionViewPage() {
         return;
       }
 
-      // Placeholder for calculationId and changeId, replace with actual logic
-      const calculationId = 'latestCalculationId'; // Replace with actual logic to get the ID
-      const changeId = 'latestChangeId'; // Replace with actual logic to get the ID
+      // Use the calculationId from the latest calculation
+      const calculationId = latestCalculation.calculationId;
+      const changeId = latestCalculation.changeId; // Ensure changeId is also available in the data
+
+      if (!calculationId) {
+        alert('Calculation ID is missing in the latest calculation data.');
+        return;
+      }
 
       await validationDecisionHandler(calculationId, changeId);
       alert('Decision validated successfully!');
@@ -43,6 +64,8 @@ export default function DecisionViewPage() {
       <Navbar />
       <main className={styles.container}>
         <h1 className={styles.title}>Decision View</h1>
+        <h2>Calculation ID: {mergedData[0]?.calculationId || 'No Calculation ID'}</h2>
+        <h2>Payment Plan ID: {mergedData[0]?.paymentPlanId || 'No Payment Plan ID'}</h2>
         <div className={styles.filterContainer}>
           <button onClick={handleValidateDecision} className={styles.validateButton}>
             Validate Decision
@@ -59,7 +82,7 @@ export default function DecisionViewPage() {
                   <th>Month</th>
                   <th>Calculation Amount</th>
                   <th>Payment Amount</th>
-                  <th>Net Result</th>
+                  <th>Amount to be paid or reimbursed</th>
                 </tr>
               </thead>
               <tbody>

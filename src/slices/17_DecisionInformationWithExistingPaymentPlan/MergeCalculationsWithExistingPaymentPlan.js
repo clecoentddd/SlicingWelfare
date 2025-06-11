@@ -1,4 +1,4 @@
-import  { fetchPaymentsByStatus} from '../shared/openPaymentPlanDB';
+import { fetchPaymentsByStatus } from '../shared/openPaymentPlanDB';
 import { fetchLatestCalculations } from '../shared/openCalculationDB';
 
 export async function fetchAndMergeCalculationPaymentData() {
@@ -12,56 +12,75 @@ export async function fetchAndMergeCalculationPaymentData() {
 
     // Fetch payments
     console.log('Fetching payments...');
-    const payments = await fetchPaymentsByStatus();
+    const paymentsResult = await fetchPaymentsByStatus();
+    const { latestPaymentPlanId, payments } = paymentsResult;
     console.log('Payments fetched successfully:', payments);
 
     // Create a map of calculations by month
     console.log('Creating calculation map by month...');
     const calculationMap = new Map();
     latestCalculations.forEach(calc => {
-      // Log each calculation entry to verify the structure and values
       console.log('Calculation Entry:', {
         month: calc.month,
-        amount: calc.amount,
         netAmount: calc.netAmount,
         incomes: calc.incomes,
-        expenses: calc.expenses
+        expenses: calc.expenses,
+        calculationId: calc.calculationId
       });
 
-      // Use netAmount if amount is not available
-      const calculationAmount = calc.amount || calc.netAmount || 0;
-      calculationMap.set(calc.month, calculationAmount);
+      const calculationAmount = calc.netAmount || 0;
+      calculationMap.set(calc.month, {
+        calculationAmount,
+        calculationId: calc.calculationId
+      });
     });
 
-    // Create a map of payments by month
+    // Create a map of payments by month, including their status
     console.log('Creating payment map by month...');
     const paymentMap = new Map();
     payments.forEach(payment => {
-      paymentMap.set(payment.month, payment.Payment);
+      paymentMap.set(payment.month, {
+        amount: payment.Payment,
+        status: payment.Status
+      });
     });
-
+    console.log('Payment map created successfully:', paymentMap);
     // Get all unique months from both calculations and payments
     const allMonths = new Set([...calculationMap.keys(), ...paymentMap.keys()]);
     console.log('All unique months:', allMonths);
 
     // Process each month to compute the new amount
     const mergedData = Array.from(allMonths).map(month => {
-      const calculationAmount = calculationMap.get(month) || 0;
-      const paymentAmount = paymentMap.get(month) || 0;
-      const newAmount = calculationAmount - paymentAmount;
+      const calcData = calculationMap.get(month) || { calculationAmount: 0, calculationId: null };
+      const paymentInfo = paymentMap.get(month) || { amount: 0, status: 'NotProcessed' };
 
-      // Log the merged data for each month
+      console.log(`----Processing month: ${month}`);
+      console.log('----Calculation Data:', calcData);
+      console.log('----Payment Data:', paymentInfo);  
+
+      let newAmount;
+      if (paymentInfo.status === 'PaymentProcessed') {
+        newAmount = calcData.calculationAmount - paymentInfo.amount;
+      } else {
+        newAmount = calcData.calculationAmount;
+      }
+
       console.log(`Merged Data for ${month}:`, {
-        calculationAmount,
-        paymentAmount,
+        calculationAmount: calcData.calculationAmount,
+        calculationId: calcData.calculationId,
+        paymentAmount: paymentInfo.amount,
+        paymentStatus: paymentInfo.status,
         newAmount
       });
 
       return {
         month,
-        calculationAmount,
-        paymentAmount,
-        newAmount
+        calculationAmount: calcData.calculationAmount,
+        calculationId: calcData.calculationId,
+        paymentAmount: paymentInfo.amount,
+        paymentStatus: paymentInfo.status,
+        newAmount,
+        paymentPlanId: latestPaymentPlanId // Include the latest paymentPlanId in the returned data
       };
     });
 
@@ -72,4 +91,3 @@ export async function fetchAndMergeCalculationPaymentData() {
     return [];
   }
 }
-

@@ -172,7 +172,7 @@ export const fetchPaymentsByStatus = async () => {
     db = await openPaymentPlanDB();
   } catch (error) {
     console.error('Failed to open database:', error);
-    return [];
+    return { latestPaymentPlanId: null, payments: [] };
   }
 
   return new Promise((resolve) => {
@@ -184,18 +184,42 @@ export const fetchPaymentsByStatus = async () => {
     request.onsuccess = (event) => {
       const allPayments = event.target.result;
 
+      // Log all payments to verify the structure and field names
+      console.log('All payments fetched:', allPayments);
+
       // Filter payments based on status
       const filteredPayments = allPayments.filter(payment =>
         payment.Status === 'PaymentToBeProcessed' || payment.Status === 'PaymentProcessed'
       );
 
-      console.log('Fetched filtered payments:', filteredPayments);
-      resolve(filteredPayments);
+      if (filteredPayments.length === 0) {
+        console.log('No payments found with the specified statuses.');
+        resolve({ latestPaymentPlanId: null, payments: [] });
+        return;
+      }
+
+      // Log filtered payments to verify the status field
+      console.log('Filtered payments:', filteredPayments);
+
+      // Sort payments by timestamp in descending order to find the latest
+      const sortedPayments = [...filteredPayments].sort((a, b) => b.timestamp - a.timestamp);
+      const latestPaymentPlanId = sortedPayments[0].paymentPlanId;
+
+      console.log('Fetched filtered payments with latest paymentPlanId:', {
+        latestPaymentPlanId,
+        payments: filteredPayments
+      });
+
+      resolve({
+        latestPaymentPlanId,
+        payments: filteredPayments
+      });
     };
 
     request.onerror = (event) => {
       console.error('Failed to retrieve payments:', event.target.error);
-      resolve([]);
+      resolve({ latestPaymentPlanId: null, payments: [] });
     };
   });
 };
+
