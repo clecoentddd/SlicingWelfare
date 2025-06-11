@@ -75,3 +75,18 @@
   font-size: 22px;
   margin-bottom: 15px;
 }
+
+/* New style for the rebuild button */
+.rebuildButton {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  margin: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.rebuildButton:hover {
+  background-color: #3e8dce;
+}

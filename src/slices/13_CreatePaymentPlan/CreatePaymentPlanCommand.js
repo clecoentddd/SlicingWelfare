@@ -40,7 +40,7 @@ export async function preparePaymentPlan(monthlyCalculations, previousPaymentId,
         month,
         amount,
         paymentDate: 'Immediate',
-        status: 'To be processed' // Initial status
+        status: 'PaymentToBeProcessed' // Initial status
       };
     } else {
       // Set payment date to the end of the month
@@ -52,7 +52,7 @@ export async function preparePaymentPlan(monthlyCalculations, previousPaymentId,
         month,
         amount,
         paymentDate: formattedDate,
-        status: 'To be processed' // Initial status
+        status: 'PaymentToBeProcessed' // Initial status
       };
     }
   });

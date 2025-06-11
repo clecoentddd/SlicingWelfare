@@ -1,5 +1,6 @@
-import { appendEvent } from '../../eventStore/eventRepository';
-import { v4 as uuidv4 } from 'uuid';
+// src/slices/15_PaymentProcessor/PaymentProcessor.js
+
+import { handlePayment } from './processPaymentHandler';
 
 export async function processPayments(paymentPlan) {
   const currentDate = new Date();
@@ -9,20 +10,8 @@ export async function processPayments(paymentPlan) {
     const paymentDate = new Date(details.Date);
 
     if (details.Date === 'Immediate' || isSameDay(paymentDate, currentDate)) {
-      const paymentId = uuidv4(); // Generate a unique paymentId for each payment
-      const paymentEvent = {
-        type: "PaymentProcessed",
-        paymentId: paymentId,
-        timestamp: Date.now(),
-        payload: {
-          month,
-          amount: details.Payment,
-          paymentDate: details.Date,
-        },
-      };
-
-      await appendEvent(paymentEvent);
-      processedPayments.push(paymentEvent);
+      const processedPayment = await handlePayment(details, month);
+      processedPayments.push(processedPayment);
     }
   }
 

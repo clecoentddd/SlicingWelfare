@@ -2,13 +2,13 @@
 
 import { getEventDB } from "../../eventStore/eventDb";
 import { EVENT_STORE_NAME } from "../../eventStore/eventDbConstants";
-import { eventEmitter } from '../shared/eventEmitter';
+import { integrationEventEmitter } from '../shared/eventEmitter';
 
 /**
  * Publishes a DataPushed domain event.
  * @param {Object} event The ChangePushed event object from the event stream.
  */
-export async function publishPushedDomainEvent(event) {
+export async function publishPushedIntegrationEvent(event) {
   const db = await getEventDB();
 
   // Create the DataPushed domain event based on the ChangePushed event
@@ -29,7 +29,7 @@ export async function publishPushedDomainEvent(event) {
   await tx.done;
 
   // Emit the DataPushed domain event
-  eventEmitter.emit('DataPushed', dataPushedEvent);
+  integrationEventEmitter.publish('DataPushed', dataPushedEvent);
 
   console.log(`Published DataPushed domain event for changeId: ${event.changeId}`);
 }

@@ -1,7 +1,7 @@
 // src/slices/11_DecisionApprovalForPayment/PublishDecisionApproval.js
 import { v4 as uuidv4 } from 'uuid';
 import { appendEvent } from '../../eventStore/eventRepository';
-import { eventEmitter } from '../shared/eventEmitter';
+import { integrationEventEmitter } from '../shared/eventEmitter';
 import { getMonthlyCalculationsByCalculationId } from '../07_CalculationProjection/calculationReadModel';
 
 export async function publishDomainEventDecisionApproved(storedEvent) {
@@ -36,7 +36,7 @@ export async function publishDomainEventDecisionApproved(storedEvent) {
     console.log(`Domain event ${domainEvent.type} stored with eventId: ${domainEvent.eventId}`);
 
     console.log('Emitting domain event:', domainEvent);
-    eventEmitter.emit('DecisionApprovedForPaymentReconciliation', domainEvent);
+    integrationEventEmitter.publish('DecisionApprovedForPaymentReconciliation', domainEvent);
     console.log(`Emitted event: ${domainEvent.type} with eventId: ${domainEvent.eventId}`);
 
     return domainEvent;

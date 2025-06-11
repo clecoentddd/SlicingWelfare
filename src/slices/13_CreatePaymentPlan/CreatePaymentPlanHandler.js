@@ -1,6 +1,6 @@
 import { preparePaymentPlan } from './CreatePaymentPlanCommand.js';
 import { appendEvent } from '../../eventStore/eventRepository';
-import { handlePaymentPlanEventForProjection } from '../14_PaymentPlanProjection/PaymentPlanProjection.js';
+import { handleToBeProcessedEventForProjection } from '../14_PaymentPlanProjection/PaymentPlanToBeProcessedProjection.js';
 
 export async function createPaymentPlanHandler(domainEvent) {
   try {
@@ -24,7 +24,7 @@ export async function createPaymentPlanHandler(domainEvent) {
     console.log(`Payment plan event ${event.type} stored with eventId: ${event.eventId}`);
 
     // Handle the event for projection
-    await handlePaymentPlanEventForProjection(event);
+    await handleToBeProcessedEventForProjection(event);
 
     console.log(`Handler: Payment plan event ${event.type} stored with eventId: ${event.eventId}`);
 

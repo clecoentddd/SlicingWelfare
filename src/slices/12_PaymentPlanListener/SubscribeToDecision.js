@@ -1,12 +1,12 @@
 // src/slices/12_PaymentPlanListener/SubscribePaymentPlan.js
 
-import { eventEmitter } from '../shared/eventEmitter';
+import { integrationEventEmitter } from '../shared/eventEmitter';
 import { createPaymentPlanHandler } from '../13_CreatePaymentPlan/CreatePaymentPlanHandler';
 
 export function subscribeToNewDecision() {
   console.log('Subscriber: Setting up event listener for DecisionApprovedForPaymentReconciliation');
 
-  eventEmitter.on('DecisionApprovedForPaymentReconciliation', async (event) => {
+  integrationEventEmitter.subscribe('DecisionApprovedForPaymentReconciliation', async (event) => {
     try {
       console.log("Subscriber: Event received:", event);
       await createPaymentPlanHandler(event);

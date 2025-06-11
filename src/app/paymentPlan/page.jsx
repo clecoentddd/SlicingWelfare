@@ -1,34 +1,53 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { getLatestPaymentPlan } from '../../slices/shared/openPaymentPlanDB';
+import { getAllPayments } from '../../slices/shared/openPaymentPlanDB';
 import { processPayments } from '../../slices/15_PaymentProcessor/PaymentProcessor';
+import { rebuildProjection } from '../../slices/16_PaymentPlanProcessedProjection/rebuildProjection.js'; // Import the rebuild function
 import Navbar from '../../../components/Navbar';
 import styles from './paymentPlan.module.css';
 
 const PaymentPlanUI = () => {
-  const [paymentPlan, setPaymentPlan] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [decisionId, setDecisionId] = useState(null);
 
   useEffect(() => {
-    const fetchPaymentPlan = async () => {
+    const fetchPayments = async () => {
       try {
-        console.log('Fetching payment plan...'); // Log before fetching
-        const latestPaymentPlan = await getLatestPaymentPlan();
-        console.log('Fetched Payment Plan:', latestPaymentPlan); // Log the fetched payment plan
-        setPaymentPlan(latestPaymentPlan);
+        console.log('Fetching all payments...');
+        const allPayments = await getAllPayments();
+        console.log('Fetched All Payments:', allPayments);
+
+        // Filter payments by status "PaymentToBeProcessed"
+        const acceptableStatuses = ['PaymentToBeProcessed', 'PaymentProcessed']; // Add any additional statuses you want to include
+        const filteredPayments = allPayments.filter(payment => acceptableStatuses.includes(payment.Status));
+
+        // Sort payments by month in descending order
+        const sortedPayments = filteredPayments.sort((a, b) => {
+          const monthA = a.month.split('-')[0];
+          const monthB = b.month.split('-')[0];
+          return monthB.localeCompare(monthA);
+        });
+
+        setPayments(sortedPayments);
+
+        // Assuming the decisionId is the same for all payments in the plan
+        if (filteredPayments.length > 0) {
+          setDecisionId(filteredPayments[0].decisionId);
+        }
       } catch (error) {
-        console.error('Error fetching payment plan:', error); // Log any errors
+        console.error('Error fetching payments:', error);
       }
     };
 
-    fetchPaymentPlan();
+    fetchPayments();
   }, []);
 
   const handleProcessPayments = async () => {
-    if (paymentPlan) {
+    if (payments.length > 0) {
       try {
-        console.log('Processing Payment Plan:', paymentPlan);
-        const processedPayments = await processPayments(paymentPlan);
+        console.log('Processing Payments:', payments);
+        const processedPayments = await processPayments({ payments });
         console.log('Processed Payments:', processedPayments);
         alert(`Processed ${processedPayments.length} payments.`);
       } catch (error) {
@@ -36,8 +55,13 @@ const PaymentPlanUI = () => {
         alert("Error processing payments. Please check the console for details.");
       }
     } else {
-      alert('No payment plan available to process.');
+      alert('No payments available to process.');
     }
+  };
+
+  const handleRebuildProjection = async () => {
+    await rebuildProjection();
+    alert('Projection rebuilt successfully!');
   };
 
   return (
@@ -45,7 +69,10 @@ const PaymentPlanUI = () => {
       <Navbar />
       <div className={styles.paymentPlanContainer}>
         <h1 className={styles.paymentPlanTitle}>Payment Plan</h1>
-        {paymentPlan ? (
+            <button onClick={handleRebuildProjection} className={styles.rebuildButton}>
+              Rebuild Projection
+            </button>
+        {payments.length > 0 ? (
           <div className={styles.paymentPlanDetails}>
             <table className={styles.paymentTable}>
               <thead>
@@ -59,19 +86,16 @@ const PaymentPlanUI = () => {
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(paymentPlan.payments || {}).map(([month, details]) => {
-                  console.log('Payment Details for Month', month, ':', details);
-                  return (
-                    <tr key={month}>
-                      <td>{details?.paymentId || 'N/A'}</td>
-                      <td>{paymentPlan.decisionId || 'N/A'}</td>
-                      <td>{month}</td>
-                      <td>{details?.Payment || 'N/A'}</td>
-                      <td>{details?.Date || 'N/A'}</td>
-                      <td>{details?.Status || 'N/A'}</td>
-                    </tr>
-                  );
-                })}
+                {payments.map((payment) => (
+                  <tr key={payment.paymentId}>
+                    <td>{payment.paymentId || 'N/A'}</td>
+                    <td>{payment.decisionId || 'N/A'}</td>
+                    <td>{payment.month || 'N/A'}</td>
+                    <td>{payment.Payment || 'N/A'}</td>
+                    <td>{payment.Date || 'N/A'}</td>
+                    <td>{payment.Status || 'N/A'}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
             <button onClick={handleProcessPayments} className={styles.processButton}>

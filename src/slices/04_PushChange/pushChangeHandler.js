@@ -2,7 +2,7 @@
 
 import { replayAggregate } from "../shared/replayAggregate.js";
 import { appendEvent } from "../../eventStore/eventRepository.js";
-import { publishPushedDomainEvent } from "./publishPushedDomainEvent.js";
+import { publishPushedIntegrationEvent } from "./publishPushedIntegrationEvent.js";
 import { pushedEventHandler } from '../05_updateChangesToPushed/pushedEventHandler.js';
 import { pushChangeCommand } from './pushChangeCommand.js'; // Import the new command
 
@@ -57,14 +57,14 @@ export async function pushChangeHandler(changeId) {
 
     // Publish the domain event to external systems (if any).
     console.log("pushChangeHandler: Publishing DataPushed domain event...");
-    await publishPushedDomainEvent(storedPushEvent);
+    await publishPushedIntegrationEvent(storedPushEvent);
     console.log("pushChangeHandler: DataPushed domain event published successfully.");
 
     console.log(`pushChangeHandler: Push operation completed successfully for changeId: ${changeId}`);
 
   } catch (err) {
     // This catch block will now only handle *unexpected* errors that occur
-    // during replayAggregate, appendEvent, pushedEventHandler, or publishPushedDomainEvent.
+    // during replayAggregate, appendEvent, pushedEventHandler, or publishPushedIntegrationEvent.
     console.error(`pushChangeHandler: An unexpected error occurred during push operation for changeId ${changeId}:`, err);
     alert(`Failed to push changes for ID ${changeId}. Please try again. Error: ${err.message}`);
     // Do NOT re-throw the error to prevent it from showing on the webpage.

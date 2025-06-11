@@ -1,4 +1,4 @@
-import { eventEmitter } from '../shared/eventEmitter';
+import { integrationEventEmitter } from '../shared/eventEmitter';
 import { retrieveDataForCalculation } from './retrieveDataForCalculation';
 
 export function subscribeToResourcesPushed() {
@@ -41,7 +41,7 @@ export function subscribeToResourcesPushed() {
   const EVENT_NAME_TO_SUBSCRIBE = 'DataPushed';
 
   // Ensure you are actually subscribing
-  eventEmitter.on(EVENT_NAME_TO_SUBSCRIBE, handleDataPushed);
+  integrationEventEmitter.subscribe(EVENT_NAME_TO_SUBSCRIBE, handleDataPushed);
 
   console.log(`Subscribed to '${EVENT_NAME_TO_SUBSCRIBE}' events.`);
 }
