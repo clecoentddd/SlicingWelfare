@@ -7,9 +7,9 @@ export async function processPayments(paymentPlan) {
   const processedPayments = [];
 
   for (const [month, details] of Object.entries(paymentPlan.payments)) {
-    const paymentDate = new Date(details.Date);
+    const paymentDate = new Date(details.date);
 
-    if (details.Date === 'Immediate' || isSameDay(paymentDate, currentDate)) {
+    if (details.date === 'Immediate' || isSameDay(paymentDate, currentDate)) {
       const processedPayment = await handlePayment(details, month);
       processedPayments.push(processedPayment);
     }

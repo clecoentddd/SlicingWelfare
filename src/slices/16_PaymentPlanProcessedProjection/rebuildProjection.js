@@ -35,9 +35,9 @@ export const rebuildProjection = async () => {
         } else if (event.type === 'PaymentProcessed') {
           await handleProcessedEventForProjection(event);
         }
-        console.log(`Processed event ${event.type} with ID: ${event.id}`);
+        console.log(`Processed event ${event}`);
       } catch (error) {
-        console.error(`Failed to process event ${event.type} with ID: ${event.id}:`, error);
+        console.error(`Failed to process event ${event}:`, error);
       }
     }
 

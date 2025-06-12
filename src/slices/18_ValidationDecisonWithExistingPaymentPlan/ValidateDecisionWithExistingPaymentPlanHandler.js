@@ -1,8 +1,7 @@
 import { appendEvent } from '../../eventStore/eventRepository';
-import { addEventToDecisionProjection } from '../10_DecisionProjection/DecisionProjection.js';
 import { validationDecisionWithExistingPaymentPlanCommand } from './ValidateDecisionWithExistingPaymentPlanCommand.js';
-import { publishIntegrationEventDecisionApproved } from '../11_DecisionApprovalForPayment/PublishDecisionApproval';
 import { domainEventEmitter } from '../shared/eventEmitter';
+import { integrationEventEmitter } from '../shared/eventEmitter';
 export async function validationDecisionWithExistingPaymentPlanHandler(calculationId, changeId, paymentPlanId) {
   try {
     // Check if calculationId is provided

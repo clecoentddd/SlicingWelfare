@@ -7,8 +7,8 @@ export async function addEventToDecisionProjection(storedEvent) {
     const decisionStore = decisionTx.objectStore("decisions");
 
     // Determine if paymentPlanId exists and set the appropriate fields
-    const hasPaymentPlanId = storedEvent.payload.paymentPlanId !== undefined;
-    const paymentPlanId = hasPaymentPlanId ? storedEvent.payload.paymentPlanId : null;
+    const hasPaymentPlanId = storedEvent.paymentPlanId !== undefined;
+    const paymentPlanId = hasPaymentPlanId ? storedEvent.paymentPlanId : null;
 
         // Determine the status based on the event type
     let status;

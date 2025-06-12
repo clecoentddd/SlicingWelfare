@@ -38,7 +38,9 @@ export const openPaymentPlanDB = () => {
 export const getLatestPaymentPlan = async () => {
   let db;
   try {
+    console.log('Attempting to open the payment plan database...');
     db = await openPaymentPlanDB();
+    console.log('Database opened successfully.');
   } catch (error) {
     console.error('Failed to open database:', error);
     return null;
@@ -48,21 +50,27 @@ export const getLatestPaymentPlan = async () => {
   const store = tx.objectStore("paymentPlans");
 
   return new Promise((resolve) => {
+    console.log('Attempting to retrieve the latest payment plan...');
     const request = store.openCursor(null, 'prev');
+
     request.onsuccess = (event) => {
       const cursor = event.target.result;
       if (cursor) {
+        console.log('Latest payment plan retrieved:', cursor.value);
         resolve(cursor.value);
       } else {
+        console.log('No payment plans found in the database.');
         resolve(null);
       }
     };
+
     request.onerror = (event) => {
       console.error('Failed to retrieve latest payment plan:', event.target.error);
       resolve(null);
     };
   });
 };
+
 
 export const getAllPayments = async () => {
   let db;
@@ -110,8 +118,8 @@ export const setPaymentIdToProcessed = async (paymentId, status, timestamp) => {
     request.onsuccess = (event) => {
       const payment = event.target.result;
       if (payment) {
-        payment.Status = status;
-        payment.Date = new Date(timestamp).toISOString();
+        payment.status = status;
+        payment.date = new Date(timestamp).toISOString();
 
         const updateRequest = store.put(payment);
         updateRequest.onsuccess = () => {
@@ -189,7 +197,7 @@ export const fetchPaymentsByStatus = async () => {
 
       // Filter payments based on status
       const filteredPayments = allPayments.filter(payment =>
-        payment.Status === 'PaymentToBeProcessed' || payment.Status === 'PaymentProcessed'
+        payment.status === 'PaymentToProcess' || payment.status === 'PaymentProcessed'
       );
 
       if (filteredPayments.length === 0) {

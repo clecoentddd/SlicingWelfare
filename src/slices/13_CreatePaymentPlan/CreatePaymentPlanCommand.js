@@ -29,18 +29,19 @@ export async function preparePaymentPlan(monthlyCalculations, previousPaymentId,
     return rejectionEvent;
   }
 
-  const payments = Object.entries(monthlyCalculations).map(([month, amount]) => {
+  // Process payments and structure them as an array of objects
+  const formattedPayments = Object.entries(monthlyCalculations).map(([month, amount]) => {
     const [monthNum, year] = month.split('-').map(Number);
     const paymentDate = new Date(year, monthNum - 1, 1); // Month is zero-based
 
     // If the payment month is before the current month and year, set payment date to immediate
     if (year < currentYear || (year === currentYear && monthNum < currentMonth)) {
       return {
-        paymentId: uuidv4(), // Generate a unique paymentId for each payment
         month,
+        paymentId: uuidv4(), // Generate a unique paymentId for each payment
         amount,
         paymentDate: 'Immediate',
-        status: 'PaymentToBeProcessed' // Initial status
+        status: 'PaymentToProcess' // Initial status
       };
     } else {
       // Set payment date to the end of the month
@@ -48,26 +49,16 @@ export async function preparePaymentPlan(monthlyCalculations, previousPaymentId,
       paymentDate.setDate(0); // Set to the last day of the month
       const formattedDate = paymentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
       return {
-        paymentId: uuidv4(), // Generate a unique paymentId for each payment
         month,
+        paymentId: uuidv4(), // Generate a unique paymentId for each payment
         amount,
         paymentDate: formattedDate,
-        status: 'PaymentToBeProcessed' // Initial status
+        status: 'PaymentToProcess' // Initial status
       };
     }
   });
 
-  // Transform the payments array into the desired object structure
-  const formattedPayments = payments.reduce((acc, payment) => {
-    acc[payment.month] = {
-      paymentId: payment.paymentId,
-      Payment: payment.amount,
-      Date: payment.paymentDate,
-      Status: payment.status
-    };
-    return acc;
-  }, {});
-
+  // Return the PaymentPlanPrepared event with formatted payments
   return {
     type: "PaymentPlanPrepared",
     paymentPlanId: uuidv4(),
@@ -76,7 +67,8 @@ export async function preparePaymentPlan(monthlyCalculations, previousPaymentId,
     aggregate: "PaymentPlan",
     payload: {
       previousPaymentId,
-      payments: formattedPayments,
+      payments: formattedPayments, // Use the directly mapped array
     },
+    eventId: uuidv4(), // Include an event ID
   };
 }

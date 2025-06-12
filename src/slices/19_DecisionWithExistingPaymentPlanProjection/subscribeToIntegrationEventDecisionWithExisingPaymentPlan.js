@@ -1,12 +1,13 @@
 // src/slices/IntegrationEventSubscriber/SubscribeToIntegrationEventDecisionApproved.js
 
 import { integrationEventEmitter } from '../shared/eventEmitter';
+import { UpdatePaymentPlansHandler } from '../20_UpdatePaymentPlans/UpdatePaymentPlansHandler';
 
 export function subscribeToIntegrationEventDecisionWithExisintPayementPlanApproved() {
   integrationEventEmitter.subscribe('DecisionCalculationValidatedWithExistingPaymentPlan', (event) => {
     try {
       console.log('Received integration event DecisionCalculationValidatedWithExistingPaymentPlan:', event);
-      // Here you can add any additional logic to handle the integration event
+      UpdatePaymentPlansHandler(event);
     } catch (error) {
       console.error("Error handling integration event DecisionCalculationValidatedWithExistingPaymentPlan:", error);
     }

@@ -29,10 +29,10 @@ export async function handleToBeProcessedEventForProjection(event) {
             decisionId: event.decisionId,
             previousPaymentId: event.payload.previousPaymentId,
             paymentId: details.paymentId, // Ensure this is unique
-            month: month,
-            Payment: details.Payment,
-            Date: details.Date,
-            Status: details.Status,
+            month: details.month,
+            amount: details.amount,
+            date: details.paymentDate,
+            status: details.status,
             timestamp: event.timestamp
           };
         });

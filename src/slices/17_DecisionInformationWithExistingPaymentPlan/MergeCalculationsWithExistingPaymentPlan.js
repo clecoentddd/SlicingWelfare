@@ -40,8 +40,8 @@ export async function fetchAndMergeCalculationPaymentData() {
     const paymentMap = new Map();
     payments.forEach(payment => {
       paymentMap.set(payment.month, {
-        amount: payment.Payment,
-        status: payment.Status
+        amount: payment.payment,
+        status: payment.status
       });
     });
     console.log('Payment map created successfully:', paymentMap);

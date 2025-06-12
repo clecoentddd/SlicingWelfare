@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { getAllPayments } from '../../slices/shared/openPaymentPlanDB';
 import { processPayments } from '../../slices/15_PaymentProcessor/PaymentProcessor';
-import { rebuildProjection } from '../../slices/16_PaymentPlanProcessedProjection/rebuildProjection.js'; // Import the rebuild function
+import { rebuildProjection } from '../../slices/16_PaymentPlanProcessedProjection/rebuildProjection.js';
 import Navbar from '../../../components/Navbar';
 import styles from './paymentPlan.module.css';
 
@@ -18,9 +18,11 @@ const PaymentPlanUI = () => {
         const allPayments = await getAllPayments();
         console.log('Fetched All Payments:', allPayments);
 
-        // Filter payments by status "PaymentToBeProcessed"
-        const acceptableStatuses = ['PaymentToBeProcessed', 'PaymentProcessed']; // Add any additional statuses you want to include
-        const filteredPayments = allPayments.filter(payment => acceptableStatuses.includes(payment.Status));
+        // Filter payments by status "PaymentToProcess"
+        const acceptableStatuses = ['PaymentToProcess', 'PaymentProcessed'];
+        const filteredPayments = allPayments.filter(payment => acceptableStatuses.includes(payment.status));
+
+        console.log('Filtered Payments:', filteredPayments);
 
         // Sort payments by month in descending order
         const sortedPayments = filteredPayments.sort((a, b) => {
@@ -28,6 +30,8 @@ const PaymentPlanUI = () => {
           const monthB = b.month.split('-')[0];
           return monthB.localeCompare(monthA);
         });
+
+        console.log('Sorted Payments:', sortedPayments);
 
         setPayments(sortedPayments);
 
@@ -60,18 +64,25 @@ const PaymentPlanUI = () => {
   };
 
   const handleRebuildProjection = async () => {
-    await rebuildProjection();
-    alert('Projection rebuilt successfully!');
+    try {
+      await rebuildProjection();
+      alert('Projection rebuilt successfully!');
+    } catch (error) {
+      console.error('Error rebuilding projection:', error);
+      alert('Error rebuilding projection. Please check the console for details.');
+    }
   };
+
+  console.log('Rendering PaymentPlanUI with payments:', payments);
 
   return (
     <>
       <Navbar />
       <div className={styles.paymentPlanContainer}>
         <h1 className={styles.paymentPlanTitle}>Payment Plan</h1>
-            <button onClick={handleRebuildProjection} className={styles.rebuildButton}>
-              Rebuild Projection
-            </button>
+        <button onClick={handleRebuildProjection} className={styles.rebuildButton}>
+          Rebuild Projection
+        </button>
         {payments.length > 0 ? (
           <div className={styles.paymentPlanDetails}>
             <table className={styles.paymentTable}>
@@ -91,9 +102,9 @@ const PaymentPlanUI = () => {
                     <td>{payment.paymentId || 'N/A'}</td>
                     <td>{payment.decisionId || 'N/A'}</td>
                     <td>{payment.month || 'N/A'}</td>
-                    <td>{payment.Payment || 'N/A'}</td>
-                    <td>{payment.Date || 'N/A'}</td>
-                    <td>{payment.Status || 'N/A'}</td>
+                    <td>{payment.amount || 'N/A'}</td>
+                    <td>{payment.date || 'N/A'}</td>
+                    <td>{payment.status || 'N/A'}</td>
                   </tr>
                 ))}
               </tbody>
