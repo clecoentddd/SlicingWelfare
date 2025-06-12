@@ -1,11 +1,22 @@
 import { openDecisionDB, addToStore } from "../shared/openDecisionDB.js";
 
-
 export async function addEventToDecisionProjection(storedEvent) {
   try {
     const decisionDb = await openDecisionDB();
     const decisionTx = decisionDb.transaction("decisions", "readwrite");
     const decisionStore = decisionTx.objectStore("decisions");
+
+    // Determine if paymentPlanId exists and set the appropriate fields
+    const hasPaymentPlanId = storedEvent.payload.paymentPlanId !== undefined;
+    const paymentPlanId = hasPaymentPlanId ? storedEvent.payload.paymentPlanId : null;
+
+        // Determine the status based on the event type
+    let status;
+    if (storedEvent.type === "DecisionCalculationValidated" || storedEvent.type === "DecisionCalculationValidatedWithExistingPaymentPlan") {
+      status = storedEvent.type;
+    } else {
+      status = "Unknown";
+    }
 
     // Map the event data to the DecisionDB structure
     const decisionEntry = {
@@ -13,7 +24,9 @@ export async function addEventToDecisionProjection(storedEvent) {
       calculationId: storedEvent.payload.calculationId,
       changeId: storedEvent.payload.changeId,
       timestamp: storedEvent.timestamp,
-      status: storedEvent.type === "DecisionCalculationValidated" ? storedEvent.type : "Unknown"  // Map type to status
+      status: status,
+      hasPaymentPlanId: hasPaymentPlanId, // Add field indicating if paymentPlanId exists
+      paymentPlanId: paymentPlanId // Add the paymentPlanId if it exists
     };
 
     // Store the mapped data in the decision store

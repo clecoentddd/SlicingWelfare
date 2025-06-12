@@ -1,4 +1,4 @@
-import { publishDomainEventDecisionApproved } from '../11_DecisionApprovalForPayment/PublishDecisionApproval';
+import { publishIntegrationEventDecisionApproved } from '../11_DecisionApprovalForPayment/PublishDecisionApproval';
 import { validationDecisionCommand } from './validationDecisionCommand';
 
 export async function validationDecisionHandler(calculationId, changeId, month, amount) {
@@ -10,7 +10,7 @@ export async function validationDecisionHandler(calculationId, changeId, month, 
 
     // Publish DecisionApprovedForPaymentReconciliation event
     console.log('validationDecisionHandler: Triggering domain event emission');
-    await publishDomainEventDecisionApproved(storedEvent);
+    await publishIntegrationEventDecisionApproved(storedEvent);
     console.log('validationDecisionHandler: Emitted domain event emission');
 
     return storedEvent;

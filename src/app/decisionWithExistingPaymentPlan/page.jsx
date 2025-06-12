@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { fetchAndMergeCalculationPaymentData } from "../../slices/17_DecisionInformationWithExistingPaymentPlan/MergeCalculationsWithExistingPaymentPlan";
-import { validationDecisionHandler } from "../../slices/09_DecisionValidation/validationDecisionHandler";
+import { validationDecisionWithExistingPaymentPlanHandler } from "../../slices/18_ValidationDecisonWithExistingPaymentPlan/ValidateDecisionWithExistingPaymentPlanHandler";
 import Navbar from '../../../components/Navbar';
 import styles from './page.module.css';
 
@@ -34,30 +34,39 @@ export default function DecisionViewPage() {
     });
   }, []);
 
-  const handleValidateDecision = async () => {
-    try {
-      const latestCalculation = mergedData.length > 0 ? mergedData[0] : null;
-      if (!latestCalculation) {
-        alert('No calculation data available to validate.');
-        return;
-      }
-
-      // Use the calculationId from the latest calculation
-      const calculationId = latestCalculation.calculationId;
-      const changeId = latestCalculation.changeId; // Ensure changeId is also available in the data
-
-      if (!calculationId) {
-        alert('Calculation ID is missing in the latest calculation data.');
-        return;
-      }
-
-      await validationDecisionHandler(calculationId, changeId);
-      alert('Decision validated successfully!');
-    } catch (error) {
-      console.error("Error validating decision:", error);
-      alert('Failed to validate decision');
+ const handleValidateDecision = async () => {
+  try {
+    const latestCalculation = mergedData.length > 0 ? mergedData[0] : null;
+    if (!latestCalculation) {
+      alert('No calculation data available to validate.');
+      return;
     }
-  };
+
+    // Extract necessary IDs from the latest calculation
+    const calculationId = latestCalculation.calculationId;
+    const changeId = latestCalculation.changeId;
+    const paymentPlanId = latestCalculation.paymentPlanId; // Extract paymentPlanId
+
+    // Validate that the necessary IDs are present
+    if (!calculationId) {
+      alert('Calculation ID is missing in the latest calculation data.');
+      return;
+    }
+
+    if (!paymentPlanId) {
+      alert('Payment Plan ID is missing in the latest calculation data.');
+      return;
+    }
+
+    // Call the handler with the extracted IDs
+    await validationDecisionWithExistingPaymentPlanHandler(calculationId, changeId, paymentPlanId);
+    alert('Decision validated successfully!');
+  } catch (error) {
+    console.error("Error validating decision:", error);
+    alert('Failed to validate decision');
+  }
+};
+
 
   return (
     <div>

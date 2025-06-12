@@ -4,7 +4,7 @@ import { appendEvent } from '../../eventStore/eventRepository';
 import { integrationEventEmitter } from '../shared/eventEmitter';
 import { getMonthlyCalculationsByCalculationId } from '../07_CalculationProjection/calculationReadModel';
 
-export async function publishDomainEventDecisionApproved(storedEvent) {
+export async function publishIntegrationEventDecisionApproved(storedEvent) {
   try {
     console.log('Creating domain event from stored event:', storedEvent);
 
