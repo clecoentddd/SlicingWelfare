@@ -8,37 +8,36 @@ import Navbar from '../../../components/Navbar';
 import styles from './paymentPlan.module.css';
 
 const PaymentPlanUI = () => {
-  const [payments, setPayments] = useState([]);
+  const [allPayments, setAllPayments] = useState([]);
+  const [filteredPayments, setFilteredPayments] = useState([]);
+  const [timestamps, setTimestamps] = useState([]);
+  const [selectedTimestamp, setSelectedTimestamp] = useState(null);
   const [decisionId, setDecisionId] = useState(null);
 
   useEffect(() => {
     const fetchPayments = async () => {
       try {
         console.log('Fetching all payments...');
-        const allPayments = await getAllPayments();
-        console.log('Fetched All Payments:', allPayments);
+        const paymentsData = await getAllPayments();
+        console.log('Fetched All Payments:', paymentsData);
 
-        // Filter payments by status "PaymentToProcess"
-        const acceptableStatuses = ['PaymentToProcess', 'PaymentProcessed'];
-        const filteredPayments = allPayments.filter(payment => acceptableStatuses.includes(payment.status));
+        // Extract unique timestamps and format them for display
+        const uniqueTimestamps = [...new Set(paymentsData.map(payment =>
+          new Date(payment.timestamp).toLocaleString()))];
 
-        console.log('Filtered Payments:', filteredPayments);
+        // Sort timestamps in descending order (most recent first)
+        uniqueTimestamps.sort((a, b) => new Date(b) - new Date(a));
+        setTimestamps(uniqueTimestamps);
 
-        // Sort payments by month in descending order
-        const sortedPayments = filteredPayments.sort((a, b) => {
-          const monthA = a.month.split('-')[0];
-          const monthB = b.month.split('-')[0];
-          return monthB.localeCompare(monthA);
-        });
-
-        console.log('Sorted Payments:', sortedPayments);
-
-        setPayments(sortedPayments);
-
-        // Assuming the decisionId is the same for all payments in the plan
-        if (filteredPayments.length > 0) {
-          setDecisionId(filteredPayments[0].decisionId);
+        // If there are timestamps, select the most recent one by default
+        if (uniqueTimestamps.length > 0) {
+          const mostRecentTimestamp = uniqueTimestamps[0];
+          setSelectedTimestamp(mostRecentTimestamp);
         }
+
+        // Store all payments
+        setAllPayments(paymentsData);
+
       } catch (error) {
         console.error('Error fetching payments:', error);
       }
@@ -47,11 +46,39 @@ const PaymentPlanUI = () => {
     fetchPayments();
   }, []);
 
+  // Filter payments based on selected timestamp
+  useEffect(() => {
+    if (selectedTimestamp && allPayments.length > 0) {
+      const filtered = allPayments.filter(payment => {
+        const paymentDate = new Date(payment.timestamp).toLocaleString();
+        return paymentDate === selectedTimestamp;
+      });
+
+      // Filter payments by status "PaymentToProcess" or "PaymentProcessed"
+      const acceptableStatuses = ['PaymentToProcess', 'PaymentProcessed'];
+      const filteredByStatus = filtered.filter(payment => acceptableStatuses.includes(payment.status));
+
+      // Sort payments by month in descending order
+      const sortedPayments = filteredByStatus.sort((a, b) => {
+        const monthA = a.month.split('-')[0];
+        const monthB = b.month.split('-')[0];
+        return monthB.localeCompare(monthA);
+      });
+
+      setFilteredPayments(sortedPayments);
+
+      // Assuming the decisionId is the same for all payments in the plan
+      if (filteredByStatus.length > 0) {
+        setDecisionId(filteredByStatus[0].decisionId);
+      }
+    }
+  }, [selectedTimestamp, allPayments]);
+
   const handleProcessPayments = async () => {
-    if (payments.length > 0) {
+    if (filteredPayments.length > 0) {
       try {
-        console.log('Processing Payments:', payments);
-        const processedPayments = await processPayments({ payments });
+        console.log('Processing Payments:', filteredPayments);
+        const processedPayments = await processPayments({ payments: filteredPayments });
         console.log('Processed Payments:', processedPayments);
         alert(`Processed ${processedPayments.length} payments.`);
       } catch (error) {
@@ -73,8 +100,6 @@ const PaymentPlanUI = () => {
     }
   };
 
-  console.log('Rendering PaymentPlanUI with payments:', payments);
-
   return (
     <>
       <Navbar />
@@ -83,7 +108,26 @@ const PaymentPlanUI = () => {
         <button onClick={handleRebuildProjection} className={styles.rebuildButton}>
           Rebuild Projection
         </button>
-        {payments.length > 0 ? (
+
+ {/* Timestamp Filter Dropdown */}
+        {timestamps.length > 0 && (
+          <div className={styles.filterContainer}>
+            <label>Filter by Timestamp: </label>
+            <select
+              value={selectedTimestamp}
+              onChange={(e) => setSelectedTimestamp(e.target.value)}
+              className={styles.timestampSelect}
+            >
+              {timestamps.map((ts, index) => (
+                <option key={index} value={ts}>
+                  {ts}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        
+        {filteredPayments.length > 0 ? (
           <div className={styles.paymentPlanDetails}>
             <table className={styles.paymentTable}>
               <thead>
@@ -97,7 +141,7 @@ const PaymentPlanUI = () => {
                 </tr>
               </thead>
               <tbody>
-                {payments.map((payment) => (
+                {filteredPayments.map((payment) => (
                   <tr key={payment.paymentId}>
                     <td>{payment.paymentId || 'N/A'}</td>
                     <td>{payment.decisionId || 'N/A'}</td>

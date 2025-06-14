@@ -90,3 +90,27 @@
 .rebuildButton:hover {
   background-color: #3e8dce;
 }
+
+/* Styles for the filter container */
+.filterContainer {
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+/* Style for the timestamp dropdown */
+.timestampSelect {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  margin-left: 10px;
+}
+
+/* Responsive adjustments (optional) */
+@media (max-width: 768px) {
+  .filterContainer label, .timestampSelect {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+}

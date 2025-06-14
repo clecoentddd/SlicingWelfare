@@ -5,7 +5,7 @@ export function subscribePaymentPlanPreparedInReplacement() {
   domainEventEmitter.subscribe('PaymentPlanPreparedInReplacement', async (paymentPlanEvent) => {
     try {
       console.log('Received domain event PaymentPlanPreparedInReplacement', paymentPlanEvent);
-      // await addEventToDecisionProjection(decisionEvent);
+        await handleProcessedEventForProjection(paymentPlanEvent);
       console.log('PaymentPlanPreparedInReplacement projection TO BE IMPLEMENTED.');
     } catch (error) {
       console.error("Error handling domain event PaymentPlanPreparedInReplacement:", error);
