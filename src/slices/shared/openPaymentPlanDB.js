@@ -174,7 +174,7 @@ export const clearPaymentPlansDB = async () => {
   });
 };
 
-export const fetchPaymentsByStatus = async () => {
+export const fetchLatestPayments = async () => {
   let db;
   try {
     db = await openPaymentPlanDB();

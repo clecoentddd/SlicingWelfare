@@ -25,7 +25,7 @@ export async function publishIntegrationEventDecisionApproved(storedEvent) {
         decisionId: storedEvent.decisionId,
         calculationId: storedEvent.payload.calculationId,
         changeId: storedEvent.payload.changeId,
-        previousPaymentId: "",
+
         // Add month and amount from the stored event's payload
         payments: monthlyCalculations,
       }

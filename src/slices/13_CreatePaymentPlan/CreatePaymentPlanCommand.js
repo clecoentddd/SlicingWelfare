@@ -11,23 +11,26 @@ export async function preparePaymentPlan(monthlyCalculations, previousPaymentId,
   const latestPaymentPlan = await getLatestPaymentPlan();
 
   if (latestPaymentPlan && latestPaymentPlan.paymentPlanId !== previousPaymentId) {
-    const rejectionEvent = {
-      type: "DecisionValidationRejected",
-      eventId: uuidv4(),
-      timestamp: Date.now(),
-      aggregate: "PaymentPlan",
-      payload: {
-        decisionId: decisionId,
-        message: "The payment plan used for reference by the decision is incorrect",
-      },
-    };
+  const rejectionMessage = `The payment plan used for reference by the decision is incorrect. Latest Payment Plan ID is ${latestPaymentPlan.paymentPlanId}, but the provided ID is ${previousPaymentId}.`;
 
-    console.log('Storing rejection event in EventDB:', rejectionEvent);
-    await appendEvent(rejectionEvent);
-    console.log(`Rejection event ${rejectionEvent.type} stored with eventId: ${rejectionEvent.eventId}`);
+  // Alert the user with a detailed message
+  alert(rejectionMessage);
 
-    return rejectionEvent;
-  }
+  // Create and handle the rejection event
+  const rejectionEvent = {
+    type: "DecisionValidationRejected",
+    eventId: uuidv4(),
+    timestamp: new Date().toISOString(),
+    aggregate: "PaymentPlan",
+    payload: {
+      decisionId: decisionId,
+      message: rejectionMessage,
+    },
+  };
+
+  // Here you might have additional logic to handle or log the rejectionEvent
+  console.log(rejectionEvent); // Placeholder for actual handling logic
+}
 
   // Process payments and structure them as an array of objects
   const formattedPayments = Object.entries(monthlyCalculations).map(([month, amount]) => {

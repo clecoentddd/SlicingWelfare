@@ -106,16 +106,10 @@ export async function fetchLatestCalculations() {
   console.log('Starting to fetch the latest calculations...');
 
   try {
-    // Open the database
+    // Open the database using the existing helper function
     console.log('Opening the database...');
     const db = await openCalculationDB();
     console.log('Database opened successfully.');
-
-    // Verify that the object store exists
-    if (!db.objectStoreNames.contains(CALCULATION_STORE_NAME)) {
-      console.error(`Object store ${CALCULATION_STORE_NAME} does not exist.`);
-      return null;
-    }
 
     // Start a transaction and access the object store
     console.log('Starting a transaction and accessing the object store...');
@@ -129,10 +123,10 @@ export async function fetchLatestCalculations() {
 
     if (allRecords.length === 0) {
       console.log('No records found in the store.');
-      return [];
+      return { latestCalculationId: null, calculations: [] };
     }
 
-    // Find the latest calculationId based on the timestamp
+    // Find the latest calculation based on timestamp
     const latestRecord = allRecords.reduce((prev, current) =>
       (prev.timestamp > current.timestamp) ? prev : current
     );
@@ -141,13 +135,15 @@ export async function fetchLatestCalculations() {
 
     // Filter records with the latest calculationId
     const latestCalculationRecords = allRecords.filter(record => record.calculationId === latestCalculationId);
-    console.log('Records with the latest calculationId:', latestCalculationRecords);
 
-    return latestCalculationRecords;
+    // Return both latestCalculationId and calculations
+    return {
+      latestCalculationId, // Use calculationId as calculationPlanId for now
+      calculations: latestCalculationRecords
+    };
   } catch (error) {
     console.error('Error in fetchLatestCalculations:', error);
-    return null;
+    return { latestCalculationId: null, calculations: [] };
   }
 }
-
 
