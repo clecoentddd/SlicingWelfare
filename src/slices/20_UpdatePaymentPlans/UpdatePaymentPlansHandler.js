@@ -3,6 +3,7 @@
 import { updatePaymentPlansCommand } from './UpdatePaymentPlansCommand';
 import { v4 as uuidv4 } from 'uuid';
 import { appendEvent } from '../../eventStore/eventRepository';
+import { domainEventEmitter } from '../shared/eventEmitter';
 
 
 
@@ -20,8 +21,14 @@ export async function UpdatePaymentPlansHandler(event) {
 
     // Append the PaymentPlanPrepared event
     await appendEvent(paymentPlanPreparedEvent);
+      console.log('Payment plan events stored successfully.');
 
-    console.log('Payment plan events stored successfully.');
+    // Publish domain event for projection
+    domainEventEmitter.publish('PaymentPlanPreparedInReplacement', paymentPlanPreparedEvent);
+    console.log('UpdatePaymentPlansHandler: Published domain event PaymentPlanPreparedInReplacement');
+    
+
+
   } catch (error) {
     console.error("Error in changeStateHandler:", error);
     throw error;

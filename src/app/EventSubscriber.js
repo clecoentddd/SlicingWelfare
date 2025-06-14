@@ -7,7 +7,7 @@ import { subscribeToResourcesPushed } from '../slices/06_CalculationProcessor/Su
 import { subscribeToPaymentProcessed } from '../slices/16_PaymentPlanProcessedProjection/SubscribeToPaymentProcessed';
 import { subscribeToDecisionProjectionWithExisintPaymentPlan } from '../slices/19_DecisionWithExistingPaymentPlanProjection/subscribeToDecisionProjectionWithExisintPaymentPlan';
 import { subscribeToIntegrationEventDecisionWithExisintPayementPlanApproved } from '../slices/19_DecisionWithExistingPaymentPlanProjection/subscribeToIntegrationEventDecisionWithExisingPaymentPlan';
-
+import { subscribePaymentPlanPreparedInReplacement } from '../slices/21_projectUpdatedPaymentPlan/subScribeToUpdatedPaymentPlan';
 
 export default function EventSubscriber() {
   useEffect(() => {
@@ -30,6 +30,9 @@ export default function EventSubscriber() {
 
     // Subscribe to decision projection with existing payment plan
     subscribeToDecisionProjectionWithExisintPaymentPlan();
+
+    // Projection subscription for new payment plan when there is an existing payment plan
+    subscribePaymentPlanPreparedInReplacement();
 
     console.log('Subscribed to all necessary events.');
   }, []);
