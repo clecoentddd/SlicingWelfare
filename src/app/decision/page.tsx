@@ -118,7 +118,7 @@ export default function DecisionViewPage() {
                       <td>{calculation.type}</td>
                       <td>{calculation.incomes}</td>
                       <td>{calculation.expenses}</td>
-                      <td>{calculation.netAmount}</td>
+                      <td>{calculation.netAmount.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>

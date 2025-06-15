@@ -122,9 +122,9 @@ export default function DecisionViewPage() {
                 {sortedMergedData.map((data, index) => (
                   <tr key={index}>
                     <td>{data.month}</td>
-                    <td>{data.calculationAmount}</td>
-                    <td>{data.paymentAlreadyProcessed}</td>
-                    <td>{data.newAmount}</td>
+                    <td>{data.calculationAmount.toFixed(2)}</td>
+                    <td>{data.paymentAlreadyProcessed.toFixed(2)}</td>
+                    <td>{data.newAmount.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>

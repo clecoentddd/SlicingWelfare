@@ -32,7 +32,7 @@ export async function handleToBeProcessedEventForProjection(event) {
             paymentId: details.paymentId, // Ensure this is unique
             month: details.month,
             amount: details.amount,
-            date: details.paymentDate,
+            date: details.month,
             status: details.status,
             timestamp: event.timestamp
           };

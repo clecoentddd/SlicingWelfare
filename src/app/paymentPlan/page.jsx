@@ -61,7 +61,7 @@ const PaymentPlanUI = () => {
       });
 
       // Filter payments by status "PaymentToProcess" or "PaymentProcessed"
-      const acceptableStatuses = ['PaymentToProcess', 'PaymentProcessed'];
+      const acceptableStatuses = ['PaymentToProcess', 'PaymentProcessed', 'ReimbursementToProcess'];
       const filteredByStatus = filtered.filter(payment => acceptableStatuses.includes(payment.status));
 
       // Sort payments by month and year in descending order

@@ -8,43 +8,41 @@ export async function updatePaymentPlansCommand(decisionId, calculationId, payme
     const { latestPaymentPlanId, payments } = await replayPaymentProcessedEvents();
     console.log('Latest payment plan ID retrieved:', latestPaymentPlanId);
 
-    // Retrieve the latest caplculation plan and calculation from the database
-    const { latestCalculationId, calculations} = await replayLatestCalculationFromEvents();
+    // Retrieve the latest calculation plan and calculations from the database
+    const { latestCalculationId, calculations } = await replayLatestCalculationFromEvents();
     console.log('Latest calculation ID retrieved:', latestCalculationId);
-    
+
+    // If there's no latest calculation ID, throw an error
+    if (!latestCalculationId) {
+      throw new Error('No latest calculation ID plan found.');
+    }
+
+    // Check if the calculationId matches the latest one
+    if (latestCalculationId !== calculationId) {
+      alert(`The provided calculationId (${calculationId}) does not match the latest calculation plan ID (${latestCalculationId}).`);
+      throw new Error(`The provided calculationId (${calculationId}) does not match the latest calculation plan ID (${latestCalculationId}).`);
+    }
 
     // If there's no latest payment plan ID, throw an error
-    if (!latestCalculationId) {
-      throw new Error('No latest calculation Id plan found.');
-    }
-
-    // Check if the paymentPlanId matches the latest one
-    if (latestCalculationId !== calculationId) {
-      // Show an alert to the user
-      alert(`The provided calculationId (${calculationId}) does not match the latest calculation plan ID (${latestPalatestcalculationIdymentPlanId}).`);
-      // Throw an error for further handling
-      throw new Error(`The provided calculationId (${calculationId}) does not match the latest calculation plan ID (${latestPalatestcalculationIdymentPlanId}).`);
-    }
-
-
-        // If there's no latest payment plan ID, throw an error
     if (!latestPaymentPlanId) {
       throw new Error('No latest payment plan found.');
     }
 
     // Check if the paymentPlanId matches the latest one
     if (latestPaymentPlanId !== paymentPlanId) {
-      // Show an alert to the user
       alert(`The provided paymentPlanId (${paymentPlanId}) does not match the latest payment plan ID (${latestPaymentPlanId}).`);
-      // Throw an error for further handling
       throw new Error(`The provided paymentPlanId (${paymentPlanId}) does not match the latest payment plan ID (${latestPaymentPlanId}).`);
     }
 
-        // Generate the payload for payments using merged data
-    const paymentPayloads = generatePayloadPayments(
-      { latestCalculationId, calculations },
-      { latestPaymentPlanId, payments }
+    // Process the calculations and payments to get merged data
+    const processedData = processCalculationAndPaymentData(
+      { calculations },
+      { payments },
+      latestPaymentPlanId
     );
+
+    // Generate the payment payloads
+    const paymentPayloads = generatePaymentPayloads(processedData);
 
     // Generate a new payment plan ID
     const newPaymentPlanId = uuidv4();
@@ -68,9 +66,9 @@ export async function updatePaymentPlansCommand(decisionId, calculationId, payme
       type: 'PaymentPlanPreparedInReplacement',
       paymentPlanId: newPaymentPlanId,
       decisionId: decisionId,
-      timestamp: Date.now(), // Using a numeric timestamp similar to your example
+      timestamp: Date.now(),
       aggregate: "PaymentPlan",
-      eventId: uuidv4(), // Generating a unique eventId
+      eventId: uuidv4(),
       payload: {
         payments: paymentPayloads
       }
@@ -90,15 +88,24 @@ export async function updatePaymentPlansCommand(decisionId, calculationId, payme
 }
 
 
-function generatePayloadPayments({ latestCalculationId, calculations }, { latestPaymentPlanId, payments }) {
-  // Step 1: Create maps for calculations and payments by month
-  console.log('Creating calculation map by month with ...',calculations);
+function processCalculationAndPaymentData({ calculations }, { payments }, latestPaymentPlanId) {
+  console.log('Creating calculation map by month...');
+
+  // Log the initial calculations data
+  console.log('Initial Calculations Data:', calculations);
+
   const calculationMap = new Map();
   calculations.forEach(calc => {
     const calculationAmount = calc.netAmount || 0;
+    console.log(`Calculation for month ${calc.month}:`, {
+      netAmount: calc.netAmount,
+      calculationAmount,
+      calculationId: calc.calculationId
+    });
+
     calculationMap.set(calc.month, {
       calculationAmount,
-      calculationId: calc.calculationId,  // This comes directly from the API
+      calculationId: calc.calculationId,
     });
   });
 
@@ -111,13 +118,16 @@ function generatePayloadPayments({ latestCalculationId, calculations }, { latest
     });
   });
 
-  // Step 2: Determine all months present in calculations or payments
   const allMonths = new Set([...calculationMap.keys(), ...paymentMap.keys()]);
 
-  // Step 3: Process each month to compute the new amount and other details
-  const processedData = Array.from(allMonths).map(month => {
+  // Log all the months being processed
+  console.log('All Months to Process:', Array.from(allMonths));
+
+  return Array.from(allMonths).map(month => {
     const calcData = calculationMap.get(month) || { calculationAmount: 0, calculationId: null };
     const paymentInfo = paymentMap.get(month) || { amount: 0, status: 'NothingToDo' };
+
+    console.log(`Processing month: ${month}, Calculation Data:`, calcData);
 
     let newAmount;
     let amountAlreadyProcessed;
@@ -125,9 +135,30 @@ function generatePayloadPayments({ latestCalculationId, calculations }, { latest
     if (paymentInfo.status === 'PaymentProcessed') {
       newAmount = calcData.calculationAmount - paymentInfo.amount;
       amountAlreadyProcessed = paymentInfo.amount;
+      console.log(`PaymentProcessed for month ${month}:`, {
+        calculationAmount: calcData.calculationAmount,
+        paymentAmount: paymentInfo.amount,
+        newAmount,
+        amountAlreadyProcessed
+      });
     } else {
       newAmount = calcData.calculationAmount;
       amountAlreadyProcessed = 0;
+      console.log(`No PaymentProcessed for month ${month}:`, {
+        calculationAmount: calcData.calculationAmount,
+        newAmount,
+        amountAlreadyProcessed
+      });
+    }
+
+    // Determine the status based on the newAmount
+    let status;
+    if (newAmount < 0) {
+      status = "ReimbursementToProcess";
+    } else if (newAmount === 0) {
+      status = "NoPaymentToProcess";
+    } else {
+      status = "PaymentToProcess";
     }
 
     return {
@@ -136,32 +167,24 @@ function generatePayloadPayments({ latestCalculationId, calculations }, { latest
       calculationAmount: calcData.calculationAmount,
       paymentAlreadyProcessed: amountAlreadyProcessed,
       newAmount,
-      paymentPlanId: latestPaymentPlanId
+      paymentPlanId: latestPaymentPlanId,
+      status
     };
   });
+}
 
-  // Step 4: Generate the new payment plan payloads
+
+function generatePaymentPayloads(processedData) {
   return processedData.map(data => {
-    const paymentId = uuidv4(); // Generate a unique ID for each payment
-    let status;
-
-    // Determine the status based on the newAmount
-    if (data.newAmount < 0) {
-      status = "ReimbursementToProcess";
-    } else if (data.newAmount === 0) {
-      status = "NoPaymentToProcess";
-    } else {
-      status = "PaymentToProcess";
-    }
+    const paymentId = uuidv4();
 
     return {
       month: data.month,
       paymentId,
       amountAlreadyProcessed: data.paymentAlreadyProcessed,
       calculationAmount: data.calculationAmount,
-      amount: data.newAmount, // Absolute value ensures amount is positive
-      paymentDate: "Immediate", // Placeholder: update logic according to business rules
-      status
+      amount: data.newAmount,
+      status: data.status
     };
   });
 }

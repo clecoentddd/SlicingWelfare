@@ -8,7 +8,6 @@ export const handleProcessedEventForProjection = async (event) => {
     console.log(`Processing payment with ID: ${event.paymentId}`);
     console.log(`Payment amount: ${event.payload.amount}`);
     console.log(`Payment month: ${event.payload.month}`);
-    console.log(`Payment date: ${event.payload.paymentDate}`);
     console.log(`Payment status: ${event.type}`);
     console.log(`Payment timestamp: ${event.timestamp}`);
 
