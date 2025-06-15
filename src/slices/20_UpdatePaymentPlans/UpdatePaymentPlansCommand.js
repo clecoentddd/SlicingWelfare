@@ -55,7 +55,7 @@ export async function updatePaymentPlansCommand(decisionId, calculationId, payme
       previousPaymentPlanId: paymentPlanId,
       newPaymentPlanId: newPaymentPlanId,
       aggregate: "PaymentPlan",
-      decisionId,
+      decisionId: decisionId,
       timestamp: new Date().toISOString(),
       payload: {
         oldPaymentPlanId: paymentPlanId,
@@ -67,7 +67,7 @@ export async function updatePaymentPlansCommand(decisionId, calculationId, payme
     const paymentPlanPreparedEvent = {
       type: 'PaymentPlanPreparedInReplacement',
       paymentPlanId: newPaymentPlanId,
-      decisionId,
+      decisionId: decisionId,
       timestamp: Date.now(), // Using a numeric timestamp similar to your example
       aggregate: "PaymentPlan",
       eventId: uuidv4(), // Generating a unique eventId
@@ -92,7 +92,7 @@ export async function updatePaymentPlansCommand(decisionId, calculationId, payme
 
 function generatePayloadPayments({ latestCalculationId, calculations }, { latestPaymentPlanId, payments }) {
   // Step 1: Create maps for calculations and payments by month
-  console.log('Creating calculation map by month...');
+  console.log('Creating calculation map by month with ...',calculations);
   const calculationMap = new Map();
   calculations.forEach(calc => {
     const calculationAmount = calc.netAmount || 0;

@@ -1,5 +1,3 @@
-// src/app/calculation/page.tsx
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,6 +10,7 @@ export default function CalculationViewPage() {
   const [filterCalculationId, setFilterCalculationId] = useState('');
   const [filterChangeId, setFilterChangeId] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterTimestamp, setFilterTimestamp] = useState(''); // New state for timestamp filter
 
   useEffect(() => {
     async function loadData() {
@@ -22,7 +21,27 @@ export default function CalculationViewPage() {
     loadData();
   }, []);
 
-  const filteredCalculations = filterCalculations(calculations, filterCalculationId, filterChangeId, filterStatus);
+  const filteredCalculations = filterCalculations(calculations, filterCalculationId, filterChangeId, filterStatus)
+    .filter(calc => !filterTimestamp || new Date(calc.timestamp).toLocaleString() === filterTimestamp)
+    .sort((a, b) => {
+      // Extract numeric month and year from month string format like "MM-YYYY"
+      const parseMonthYear = (monthStr) => {
+        const parts = monthStr.split('-');
+        const month = parseInt(parts[0], 10);
+        const year = parseInt(parts[1], 10);
+        return { year, month };
+      };
+
+      const { year: aYear, month: aMonth } = parseMonthYear(a.month);
+      const { year: bYear, month: bMonth } = parseMonthYear(b.month);
+
+      // Sorting logic: First by year, then by month
+      if (aYear !== bYear) return bYear - aYear;  // Descending by year
+      return bMonth - aMonth;  // Ascending by month (January comes before December)
+    });
+
+  // Extract unique timestamps for the filter dropdown
+  const uniqueTimestamps = [...new Set(calculations.map(calc => new Date(calc.timestamp).toLocaleString()))];
 
   return (
     <div>
@@ -48,6 +67,18 @@ export default function CalculationViewPage() {
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
           />
+          <select
+            value={filterTimestamp}
+            onChange={(e) => setFilterTimestamp(e.target.value)}
+            className={styles.select}
+          >
+            <option value="">Select Timestamp</option>
+            {uniqueTimestamps.map((ts, index) => (
+              <option key={index} value={ts}>
+                {ts}
+              </option>
+            ))}
+          </select>
         </div>
         <table className={styles.table}>
           <thead>
@@ -70,7 +101,7 @@ export default function CalculationViewPage() {
                 <td className={styles.tableData}>{calc.month}</td>
                 <td className={styles.tableData}>{calc.incomes}</td>
                 <td className={styles.tableData}>{calc.expenses}</td>
-                <td className={styles.tableData}>{calc.netAmount}</td>
+                <td className={styles.tableData}>{calc.netAmount !== undefined ? parseFloat(calc.netAmount).toFixed(2) : 'N/A'}</td>
                 <td className={styles.tableData}>{calc.type || 'N/A'}</td>
                 <td className={styles.tableData}>{new Date(calc.timestamp).toLocaleString()}</td>
               </tr>

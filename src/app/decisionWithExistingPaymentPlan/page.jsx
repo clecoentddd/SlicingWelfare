@@ -94,7 +94,7 @@ export default function DecisionViewPage() {
     <div>
       <Navbar />
       <main className={styles.container}>
-        <h1 className={styles.title}>Decision View</h1>
+        <h1 className={styles.title}>Decision View with Existing Payment Plan</h1>
         <h2>Calculation ID: {mergedData[0]?.calculationId || 'No Calculation ID'}</h2>
         <h2>Payment Plan ID: {mergedData[0]?.paymentPlanId || 'No Payment Plan ID'}</h2>
         <div className={styles.filterContainer}>

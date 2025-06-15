@@ -197,8 +197,8 @@ export const fetchLatestPayments = async () => {
 
       // Filter payments based on status
       const filteredPayments = allPayments.filter(payment =>
-        payment.status === 'PaymentToProcess' || payment.status === 'PaymentProcessed'
-      );
+        payment.status === 'PaymentProcessed'
+       );
 
       if (filteredPayments.length === 0) {
         console.log('No payments found with the specified statuses.');

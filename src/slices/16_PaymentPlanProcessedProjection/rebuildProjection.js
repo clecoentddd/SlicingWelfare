@@ -20,7 +20,7 @@ export const rebuildProjection = async () => {
 
     // Filter events to include only those of type "PaymentPlanPrepared" or "PaymentProcessed" and sort them by ID
     const filteredEvents = events
-      .filter(event => ['PaymentPlanPrepared', 'PaymentProcessed'].includes(event.type))
+      .filter(event => ['PaymentPlanPrepared', 'PaymentPlanPreparedInReplacement', 'PaymentProcessed'].includes(event.type))
       .sort((a, b) => a.id - b.id); // Sort by ID in ascending order
 
     console.log('Filtered and sorted events:', filteredEvents);
@@ -30,7 +30,7 @@ export const rebuildProjection = async () => {
     // Process each event in order
     for (const event of filteredEvents) {
       try {
-        if (event.type === 'PaymentPlanPrepared') {
+        if (event.type === 'PaymentPlanPrepared' || event.type === 'PaymentPlanPreparedInReplacement') {
           await handleToBeProcessedEventForProjection(event);
         } else if (event.type === 'PaymentProcessed') {
           await handleProcessedEventForProjection(event);

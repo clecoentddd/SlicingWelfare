@@ -21,17 +21,22 @@ const PaymentPlanUI = () => {
         const paymentsData = await getAllPayments();
         console.log('Fetched All Payments:', paymentsData);
 
-        // Extract unique timestamps and format them for display
-        const uniqueTimestamps = [...new Set(paymentsData.map(payment =>
-          new Date(payment.timestamp).toLocaleString()))];
+        // Extract unique timestamps and store them with the original timestamp for sorting
+        const uniqueTimestampEntries = paymentsData.reduce((acc, payment) => {
+          const localeString = new Date(payment.timestamp).toLocaleString();
+          if (!acc.some(entry => entry.localeString === localeString)) {
+            acc.push({ localeString, timestamp: payment.timestamp });
+          }
+          return acc;
+        }, []);
 
         // Sort timestamps in descending order (most recent first)
-        uniqueTimestamps.sort((a, b) => new Date(b) - new Date(a));
-        setTimestamps(uniqueTimestamps);
+        uniqueTimestampEntries.sort((a, b) => b.timestamp - a.timestamp);
+        setTimestamps(uniqueTimestampEntries.map(entry => entry.localeString));
 
         // If there are timestamps, select the most recent one by default
-        if (uniqueTimestamps.length > 0) {
-          const mostRecentTimestamp = uniqueTimestamps[0];
+        if (uniqueTimestampEntries.length > 0) {
+          const mostRecentTimestamp = uniqueTimestampEntries[0].localeString;
           setSelectedTimestamp(mostRecentTimestamp);
         }
 
@@ -46,9 +51,10 @@ const PaymentPlanUI = () => {
     fetchPayments();
   }, []);
 
-  // Filter payments based on selected timestamp
+  // Filter payments based on selected timestamp and status
   useEffect(() => {
     if (selectedTimestamp && allPayments.length > 0) {
+      // Extract timestamp string equivalent for comparison
       const filtered = allPayments.filter(payment => {
         const paymentDate = new Date(payment.timestamp).toLocaleString();
         return paymentDate === selectedTimestamp;
@@ -58,11 +64,21 @@ const PaymentPlanUI = () => {
       const acceptableStatuses = ['PaymentToProcess', 'PaymentProcessed'];
       const filteredByStatus = filtered.filter(payment => acceptableStatuses.includes(payment.status));
 
-      // Sort payments by month in descending order
+      // Sort payments by month and year in descending order
       const sortedPayments = filteredByStatus.sort((a, b) => {
-        const monthA = a.month.split('-')[0];
-        const monthB = b.month.split('-')[0];
-        return monthB.localeCompare(monthA);
+        const parseMonthYear = (monthStr) => {
+          const parts = monthStr.split('-');
+          const month = parseInt(parts[0], 10);
+          const year = parseInt(parts[1], 10);
+          return { year, month };
+        };
+
+        const { year: aYear, month: aMonth } = parseMonthYear(a.month);
+        const { year: bYear, month: bMonth } = parseMonthYear(b.month);
+
+        // Sort by year then month, in descending order
+        if (aYear !== bYear) return bYear - aYear;
+        return bMonth - aMonth;
       });
 
       setFilteredPayments(sortedPayments);
@@ -94,6 +110,7 @@ const PaymentPlanUI = () => {
     try {
       await rebuildProjection();
       alert('Projection rebuilt successfully!');
+      window.location.reload();
     } catch (error) {
       console.error('Error rebuilding projection:', error);
       alert('Error rebuilding projection. Please check the console for details.');
@@ -109,7 +126,7 @@ const PaymentPlanUI = () => {
           Rebuild Projection
         </button>
 
- {/* Timestamp Filter Dropdown */}
+        {/* Timestamp Filter Dropdown */}
         {timestamps.length > 0 && (
           <div className={styles.filterContainer}>
             <label>Filter by Timestamp: </label>
@@ -126,13 +143,14 @@ const PaymentPlanUI = () => {
             </select>
           </div>
         )}
-        
+
         {filteredPayments.length > 0 ? (
           <div className={styles.paymentPlanDetails}>
             <table className={styles.paymentTable}>
               <thead>
                 <tr>
                   <th>Payment ID</th>
+                  <th>PaymentPlanID</th>
                   <th>Decision ID</th>
                   <th>Month</th>
                   <th>Amount</th>
@@ -144,9 +162,10 @@ const PaymentPlanUI = () => {
                 {filteredPayments.map((payment) => (
                   <tr key={payment.paymentId}>
                     <td>{payment.paymentId || 'N/A'}</td>
+                    <td>{payment.paymentPlanId || 'N/A'}</td>
                     <td>{payment.decisionId || 'N/A'}</td>
                     <td>{payment.month || 'N/A'}</td>
-                    <td>{payment.amount || 'N/A'}</td>
+                    <td>{payment.amount ? parseFloat(payment.amount).toFixed(2) : 'N/A'}</td>
                     <td>{payment.date || 'N/A'}</td>
                     <td>{payment.status || 'N/A'}</td>
                   </tr>

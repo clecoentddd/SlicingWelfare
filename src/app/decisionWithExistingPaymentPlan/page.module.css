@@ -8,8 +8,10 @@
 }
 
 .title {
-  color: #97daec;
+  color: #1bbeeb;
   text-align: center;
+  margin-bottom: 5px;
+  font-size: large;
 }
 
 .filterContainer {

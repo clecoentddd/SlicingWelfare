@@ -9,12 +9,16 @@ import { domainEventEmitter } from '../shared/eventEmitter';
 
 export async function UpdatePaymentPlansHandler(event) {
   try {
-    const { paymentPlanId, decisionId, calculationId, calculations } = event.payload;
+
+    console.log("UpdatePaymentPlansHandler: event received is", event);
+
+    const { paymentPlanId, calculationId, calculations } = event.payload;
+    const decisionId = event.decisionId;
 
     console.log(`Processing payments for paymentPlanId: ${paymentPlanId} with decisionId: ${decisionId} based on calculationId: ${calculationId}`);
 
     // Call the command to process payments and create events
-    const { paymentPlanReplacedEvent, newPaymentEvents, paymentPlanPreparedEvent } = await updatePaymentPlansCommand(decisionId, calculationId, paymentPlanId);
+    const { paymentPlanReplacedEvent, paymentPlanPreparedEvent } = await updatePaymentPlansCommand(decisionId, calculationId, paymentPlanId);
 
     // Append the PaymentPlanReplaced event
     await appendEvent(paymentPlanReplacedEvent);

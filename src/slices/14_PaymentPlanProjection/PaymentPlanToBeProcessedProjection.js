@@ -18,7 +18,8 @@ export async function handleToBeProcessedEventForProjection(event) {
 
   try {
     switch (event.type) {
-      case "PaymentPlanPrepared":
+      case "PaymentPlanPrepared": 
+      case "PaymentPlanPreparedInReplacement":
         console.log('Processing PaymentPlanPrepared event.');
 
         // Iterate over each month in the payload
