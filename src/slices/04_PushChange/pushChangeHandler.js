@@ -2,9 +2,9 @@
 
 import { replayAggregate } from "../shared/replayAggregate.js";
 import { appendEvent } from "../../eventStore/eventRepository.js";
-import { publishPushedIntegrationEvent } from "./publishPushedIntegrationEvent.js";
-import { pushedEventHandler } from '../05_updateChangesToPushed/pushedEventHandler.js';
 import { pushChangeCommand } from './pushChangeCommand.js'; // Import the new command
+import { domainEventEmitter } from '../shared/eventEmitter';
+import { integrationEventEmitter } from "../shared/eventEmitter";
 
 /**
  * Handles the push change operation.
@@ -42,29 +42,27 @@ export async function pushChangeHandler(changeId) {
       alert(`Cannot push changes. Change with ID ${changeId} has status "${status}".`);
       return; // Exit the handler, as the command did not suggest an event.
     }
-    // --- CRITICAL FIX END ---
-
+    
     // 3. Append the suggested event to the event store.
-    // This line will now only be reached if suggestedPushEvent is a valid object.
     const storedPushEvent = await appendEvent(suggestedPushEvent);
     console.log(`pushChangeHandler: ChangePushed event appended. Local DB ID: ${storedPushEvent.id}, Event ID: ${storedPushEvent.eventId}`);
 
     // 4. Trigger side effects.
     // Update the local projection for the 'Change' aggregate.
     console.log("pushChangeHandler: Triggering pushedEventHandler for projection update...");
-    await pushedEventHandler(storedPushEvent);
+    domainEventEmitter.publish('DataPushed', storedPushEvent);
     console.log("pushChangeHandler: Projection updated successfully.");
 
     // Publish the domain event to external systems (if any).
-    console.log("pushChangeHandler: Publishing DataPushed domain event...");
-    await publishPushedIntegrationEvent(storedPushEvent);
-    console.log("pushChangeHandler: DataPushed domain event published successfully.");
+    console.log("pushChangeHandler: Publishing DataPushed integration event...");
+    integrationEventEmitter.publish('DataPushed', storedPushEvent);
+    console.log("pushChangeHandler: DataPushed integration event published successfully.");
 
     console.log(`pushChangeHandler: Push operation completed successfully for changeId: ${changeId}`);
 
   } catch (err) {
     // This catch block will now only handle *unexpected* errors that occur
-    // during replayAggregate, appendEvent, pushedEventHandler, or publishPushedIntegrationEvent.
+    // during replayAggregate, appendEvent, pushedEventHandler.
     console.error(`pushChangeHandler: An unexpected error occurred during push operation for changeId ${changeId}:`, err);
     alert(`Failed to push changes for ID ${changeId}. Please try again. Error: ${err.message}`);
     // Do NOT re-throw the error to prevent it from showing on the webpage.

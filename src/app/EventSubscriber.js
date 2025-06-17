@@ -3,11 +3,12 @@
 
 import { useEffect } from 'react';
 import { subscribeToNewDecision } from '../slices/12_PaymentPlanListener/SubscribeToDecision';
-import { subscribeToResourcesPushed } from '../slices/06_CalculationProcessor/SubscribeDomainEventResourcesPushed';
+import { subscribeToIntegrationEventResourcesPushed } from '../slices/06_CalculationProcessor/SubscribeIntegrationEventResourcesPushed';
 import { subscribeToPaymentProcessed } from '../slices/16_PaymentPlanProcessedProjection/SubscribeToPaymentProcessed';
 import { subscribeToDecisionProjectionWithExisintPaymentPlan } from '../slices/19_DecisionWithExistingPaymentPlanProjection/subscribeToDecisionProjectionWithExisintPaymentPlan';
 import { subscribeToIntegrationEventDecisionWithExisintPayementPlanApproved } from '../slices/19_DecisionWithExistingPaymentPlanProjection/subscribeToIntegrationEventDecisionWithExisingPaymentPlan';
 import { subscribePaymentPlanPreparedInReplacement } from '../slices/21_projectUpdatedPaymentPlan/subScribeToUpdatedPaymentPlan';
+import {subscribeToDomainEventDataPushed} from '../slices/05_updateChangesToPushedInProjection/subscribeToDomainEventDataPushed'
 
 export default function EventSubscriber() {
   useEffect(() => {
@@ -17,9 +18,11 @@ export default function EventSubscriber() {
     subscribeToNewDecision();
 
     // Subscribe to DataPushed domain events
-    subscribeToResourcesPushed();
+    subscribeToDomainEventDataPushed();
 
-    //
+    // Data Pushed Integration:
+    subscribeToIntegrationEventResourcesPushed();
+
     subscribeToIntegrationEventDecisionWithExisintPayementPlanApproved();
 
     // Domain Events:
