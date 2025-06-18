@@ -60,7 +60,7 @@ export default function Navbar() {
           Payment Plan
         </Link>
         <Link
-          href="/"
+          href="/monitoring"
           className={`${styles.navLink} ${activeLink === 'monitoring' ? styles.loading : ''}`}
           onClick={() => handleLinkClick('monitoring')}
         >

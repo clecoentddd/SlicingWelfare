@@ -1,48 +1,26 @@
-/* src/app/monitoring/monitoring.module.css */
-
+/* monitoring.module.css */
 .container {
-  padding: 1rem;
+  padding: 20px;
   font-family: Arial, sans-serif;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
-.title {
-  color: #0d65ad; /* Purple theme */
-  text-align: center;
-}
-
-.loading {
-  text-align: center;
-  color: #0d65ad;
-  font-size: 1.2rem;
-  margin: 2rem 0;
-}
-
-.tableContainer {
-  margin-top: 2rem;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.table th, .table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-
-.table th {
-  background-color: #0d65ad;
+.button {
+  background-color: gray;
   color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  margin: 20px 0;
+  cursor: pointer;
 }
 
-.table tr:nth-child(even) {
-  background-color: #f2f2f2;
+.details {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #f4f4f4;
+  border-radius: 5px;
 }
 
-.table tr:hover {
-  background-color: #ddd;
+.details p {
+  margin: 5px 0;
 }

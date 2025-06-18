@@ -147,3 +147,34 @@ export async function fetchLatestCalculations() {
   }
 }
 
+
+// Add this function to your openCalculationDB.js file
+
+export async function getLatestCalculationDBUpdate() {
+  try {
+    const db = await openCalculationDB();
+    const tx = db.transaction(CALCULATION_STORE_NAME, 'readonly');
+    const store = tx.objectStore(CALCULATION_STORE_NAME);
+    const allRecords = await getAllFromStore(store);
+
+    if (allRecords.length === 0) {
+      console.log('No records found in the store.');
+      return null;
+    }
+
+    // Find the latest record based on timestamp
+    const latestRecord = allRecords.reduce((prev, current) =>
+      (prev.timestamp > current.timestamp) ? prev : current
+    );
+
+    // Return the latest calculation's details
+    return {
+      changeId: latestRecord.changeId,
+      timestamp: latestRecord.timestamp,
+    };
+  } catch (error) {
+    console.error('Error fetching latest DB update:', error);
+    return null;
+  }
+}
+

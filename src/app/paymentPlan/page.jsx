@@ -90,21 +90,36 @@ const PaymentPlanUI = () => {
     }
   }, [selectedTimestamp, allPayments]);
 
-  const handleProcessPayments = async () => {
-    if (filteredPayments.length > 0) {
-      try {
-        console.log('Processing Payments:', filteredPayments);
-        const processedPayments = await processPayments({ payments: filteredPayments });
-        console.log('Processed Payments:', processedPayments);
-        alert(`Processed ${processedPayments.length} payments.`);
-      } catch (error) {
-        console.error('Error processing payments:', error);
-        alert("Error processing payments. Please check the console for details.");
-      }
-    } else {
-      alert('No payments available to process.');
+const handleProcessPayments = async () => {
+  if (filteredPayments.length > 0) {
+    try {
+      console.log('Processing Payments:', filteredPayments);
+
+      // Construct paymentPlan as expected by processPayments
+      const paymentPlan = {
+        payments: filteredPayments.reduce((acc, payment) => {
+          // Assuming 'month' field contains the month and year in the format "MM-YYYY"
+          const monthKey = payment.month; // Ensure month field is in the expected format
+          acc[monthKey] = payment; // Structuring payment details by monthKey
+          return acc;
+        }, {})
+      };
+
+      console.log('Structured Payment Plan:', paymentPlan);
+
+      const processedPayments = await processPayments(paymentPlan);
+      console.log('Processed Payments:', processedPayments);
+      alert(`Processed ${processedPayments.length} payments.`);
+      window.location.reload();
+    } catch (error) {
+      console.error('Error processing payments:', error);
+      alert("Error processing payments. Please check the console for details.");
     }
-  };
+  } else {
+    alert('No payments available to process.');
+  }
+};
+
 
   const handleRebuildProjection = async () => {
     try {
