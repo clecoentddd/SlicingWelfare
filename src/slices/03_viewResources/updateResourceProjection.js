@@ -1,7 +1,5 @@
 // src/03_viewResources/updateResourceProjection.js
-
-const RESOURCE_STORE_NAME = "resources";
-
+import {notifyResourceChanged} from './queryResourceProjection';
 /**
  * Performs the actual database write operations to update the 'resources' projection.
  * This function processes events like 'IncomeAdded' or 'ExpenseAdded',
@@ -90,6 +88,7 @@ export async function updateResourceProjection(event, resourceStore) {
 
         await Promise.all(putPromises);
         console.log(`Resource Projection Updater: Successfully stored ${affectedResources.length} resources for event ${event.id}.`);
+        notifyResourceChanged(); // update front end
         return affectedResources;
 
     } else {

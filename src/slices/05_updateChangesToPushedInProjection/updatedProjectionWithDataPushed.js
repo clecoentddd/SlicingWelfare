@@ -1,5 +1,6 @@
 // Import the database opener from your shared slice
 import { openResourceDB } from '../shared/openResourceDB.js'; // Ensure this path is correct
+import { notifyResourceChanged } from '../03_viewResources/queryResourceProjection';
 
 // Define the store name here, as it's not exported from openResourceDB.js
 const RESOURCE_STORE_NAME = "resources"; // This must match the name used in openResourceDB.js
@@ -67,6 +68,8 @@ export async function updatedProjectionWithDataPushed(ev) {
 
     await Promise.all(putOperations);
     await tx.done;
+    notifyResourceChanged();
+    
 
     console.log(`Pushed Handler: Successfully updated ${updatedResourceIds.length} resources for changeId: ${changeId}. Updated IDs:`, updatedResourceIds);
   } catch (error) {

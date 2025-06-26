@@ -9,6 +9,7 @@ import { subscribeToDecisionProjectionWithExisintPaymentPlan } from '../slices/1
 import { subscribeToIntegrationEventDecisionWithExisintPayementPlanApproved } from '../slices/19_DecisionWithExistingPaymentPlanProjection/subscribeToIntegrationEventDecisionWithExisingPaymentPlan';
 import { subscribePaymentPlanPreparedInReplacement } from '../slices/21_projectUpdatedPaymentPlan/subScribeToUpdatedPaymentPlan';
 import {subscribeToDomainEventDataPushed} from '../slices/05_updateChangesToPushedInProjection/subscribeToDomainEventDataPushed'
+import {subscribeToDomainEventDataCancelled} from '../slices/23_UpateResourcesProjectionWithCancellingCommittedEntries/subscribeToDomainEventDataCancelled';
 
 export default function EventSubscriber() {
   useEffect(() => {
@@ -19,6 +20,9 @@ export default function EventSubscriber() {
 
     // Subscribe to DataPushed domain events
     subscribeToDomainEventDataPushed();
+
+    // Subscribe to DataCancelled domain events
+    subscribeToDomainEventDataCancelled();
 
     // Data Pushed Integration:
     subscribeToIntegrationEventResourcesPushed();

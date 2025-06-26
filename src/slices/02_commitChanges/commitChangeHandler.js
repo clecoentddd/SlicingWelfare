@@ -2,7 +2,7 @@
 
 import { replayAggregate } from "../shared/replayAggregate.js";
 import { appendEvent } from "../../eventStore/eventRepository.js";
-import { handleEventForProjection } from '../03_viewResources/handleEventForProjection.js';
+import { handleEventForProjection } from '../03_viewResources/handleCommittedEventForProjection.js';
 import { commitChangeCommand } from "./commitChangeCommand.js"; // Import the refined command
 
 /**

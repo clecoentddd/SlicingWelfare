@@ -1,16 +1,20 @@
-    // src/slices/03_viewResources/queryResourceProjection.js
+// src/slices/03_viewResources/queryResourceProjection.js
 
-import { openResourceDB } from "../shared/openResourceDB.js"; // Assuming this path is correct for openResourceDB
+import { openResourceDB } from "../shared/openResourceDB.js";
 
 const RESOURCE_STORE_NAME = "resources";
+const subscribers = new Set();
+
+/**
+ * Notify all subscribers with fresh data
+ */
+async function notifySubscribers() {
+  const data = await queryResourceProjection();
+  subscribers.forEach(callback => callback(data));
+}
 
 /**
  * Queries the 'resources' projection from IndexedDB.
- * This function encapsulates the database interaction, allowing UI components
- * to retrieve projected data without direct knowledge of IndexedDB.
- *
- * @returns {Promise<Array<Object>>} A promise that resolves with an array of
- * sorted resource objects, or an empty array if an error occurs.
  */
 export async function queryResourceProjection() {
   try {
@@ -32,6 +36,29 @@ export async function queryResourceProjection() {
     return result;
   } catch (err) {
     console.error(`❌ Failed to query '${RESOURCE_STORE_NAME}' projection:`, err);
-    return []; // Return an empty array on error
+    return [];
   }
+}
+
+/**
+ * Subscribe to resource updates
+ * @param {Function} callback - Called with new data when resources change
+ * @returns {Function} Unsubscribe function
+ */
+export function subscribeToResourceUpdates(callback) {
+  subscribers.add(callback);
+  
+  // Initial data load
+  queryResourceProjection().then(callback);
+  
+  return () => {
+    subscribers.delete(callback);
+  };
+}
+
+/**
+ * Call this whenever resources are modified to notify subscribers
+ */
+export function notifyResourceChanged() {
+  notifySubscribers();
 }

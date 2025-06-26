@@ -10,8 +10,9 @@ import { handleCommitCommand } from "../slices/02_commitChanges/commitChangeHand
 import styles from "./page.module.css";
 import ProjectionPanel from "../slices/03_viewResources/projectionPanel.jsx";
 import { getChangeStatus } from "../slices/shared/getStatus.js";
-import { handleEventForProjection } from '../slices/03_viewResources/handleEventForProjection.js';
+import { handleEventForProjection } from '../slices/03_viewResources/handleCommittedEventForProjection.js';
 import Navbar from '../../components/Navbar';
+import { cancelChangeHandler } from "../slices/22_CancelChange/cancelChangeHandler.js";
 
 async function fetchAllEventsForDisplay() {
   const events = await getAllEvents();
@@ -24,22 +25,32 @@ export default function Page() {
   const [pending, setPending] = useState([]);
   const [changeId, setChangeId] = useState(null);
 
-  const loadEventsForDisplay = useCallback(async () => {
-    try {
-      const events = await fetchAllEventsForDisplay();
-      setDbEvents(events);
+const loadEventsForDisplay = useCallback(async () => {
+  try {
+    const events = await fetchAllEventsForDisplay();
+    setDbEvents(events);
 
-      const latestChangeEvent = events.slice().reverse().find(e => e.type === "ChangeCreated");
-      if (latestChangeEvent) {
-        setChangeId(latestChangeEvent.changeId);
-      } else {
-        setChangeId(null);
+    // Scan from newest to oldest
+    let activeChangeId = null;
+
+    for (const e of events.slice().reverse()) {
+      if (e.type === "ChangePushed" || e.type === "ChangeCanceled") {
+        // This change is no longer active, stop tracking it
+        break;
       }
-    } catch (err) {
-      console.error("Error loading events for display:", err);
-      setError("Failed to load events for display: " + err.message);
+      if (e.type === "ChangeCreated") {
+        activeChangeId = e.changeId;
+        break;
+      }
     }
-  }, []);
+
+    setChangeId(activeChangeId);
+  } catch (err) {
+    console.error("Error loading events for display:", err);
+    setError("Failed to load events for display: " + err.message);
+  }
+}, []);
+
 
   useEffect(() => {
     loadEventsForDisplay();
@@ -49,6 +60,13 @@ export default function Page() {
   const latestChangeStatus = useMemo(() => {
     return getChangeStatus(dbEvents, changeId);
   }, [dbEvents, changeId]);
+
+  const refreshAfterAction = async () => {
+  console.log ("refreshAfterAction Calling");
+  await loadEventsForDisplay();
+  setPending([]); // Always clear pending, as the state is no longer valid after push/cancel
+  console.log ("refreshAfterAction Done");
+};
 
   const handleCreateChange = async () => {
     setError(null); // Clear any previous errors
@@ -104,8 +122,7 @@ export default function Page() {
   const handleCommit = async () => {
     try {
       await handleCommitCommand(pending, changeId);
-      await loadEventsForDisplay();
-      setPending([]);
+      await refreshAfterAction();
     } catch (err) {
       setError(err.message);
     }
@@ -118,11 +135,25 @@ export default function Page() {
     }
     try {
       await pushChangeHandler(changeId);
-      await loadEventsForDisplay();
+      await refreshAfterAction();
     } catch (error) {
       setError(error.message);
     }
   };
+
+    const handleCancel = async () => {
+    if (!changeId) {
+      setError("No change ID available to push changes.");
+      return;
+    }
+    try {
+      await cancelChangeHandler(changeId);
+      await refreshAfterAction();
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
 
   return (
     <div>
@@ -138,6 +169,7 @@ export default function Page() {
           <button className={styles.btnExpense} onClick={handleAddExpense}>+ Expense</button>
           <button className={styles.btnCommit} onClick={handleCommit} disabled={pending.length === 0}>Commit</button>
           <button className={styles.btnPush} onClick={handlePush}>Push Changes</button>
+          <button className={styles.btnCancelChange} onClick={handleCancel}>Cancel Changes</button>
 
           {error && <p className={styles.error}>{error}</p>}
 
