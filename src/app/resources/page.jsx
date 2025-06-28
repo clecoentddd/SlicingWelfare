@@ -42,7 +42,7 @@ export default function ProjectionViewPage() {
     <div className={styles.container}>
       <Navbar />
       <main className={styles.mainContent}>
-        <h1 className={styles.title}>Projection View</h1>
+        <h1 className={styles.title}>resource Projection View</h1>
         <table className={styles.table}>
           <thead>
             <tr>
