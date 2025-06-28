@@ -100,8 +100,8 @@ export async function addIncomeCommand(changeId) {
     return null;
   }
 
-  const startMonth = prompt("Start month (YYYY-MM):", "2025-01") || "2025-01";
-  const endMonth = prompt("End month (YYYY-MM):", "2025-03") || "2025-03";
+  const startMonth = prompt("Start month (YYYY-MM):", "2025-05") || "2025-05";
+  const endMonth = prompt("End month (YYYY-MM):", "2025-07") || "2025-07";
 
   return createIncomeEvent(changeId, amount, description, startMonth, endMonth);
 }
@@ -121,8 +121,8 @@ export async function addExpenseCommand(changeId) {
     return null;
   }
 
-  const startMonth = prompt("Start month (YYYY-MM):", "2025-03") || "2025-03";
-  const endMonth = prompt("End month (YYYY-MM):", "2025-04") || "2025-04";
+  const startMonth = prompt("Start month (YYYY-MM):", "2025-05") || "2025-07";
+  const endMonth = prompt("End month (YYYY-MM):", "2025-07") || "2025-07";
 
   return createExpenseEvent(changeId, amount, description, startMonth, endMonth);
 }

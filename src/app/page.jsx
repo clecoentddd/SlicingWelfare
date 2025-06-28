@@ -185,7 +185,13 @@ const loadEventsForDisplay = useCallback(async () => {
                     <li className={styles.pendingItem} key={i}>
                       <strong>{ev.payload.description}</strong> — CHF {ev.payload.amount}
                       <span>
-                        {ev.payload.period.start?.toString().slice(0, 10)} → {ev.payload.period.end?.toString().slice(0, 10)}
+                        {new Date(ev.payload.period.start).toLocaleString('en-GB', {
+                          month: 'long',
+                          year: 'numeric'
+                        })} → {new Date(ev.payload.period.end).toLocaleString('en-GB', {
+                          month: 'long',
+                          year: 'numeric'
+                        })}
                       </span>
                     </li>
                   );
