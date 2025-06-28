@@ -1,24 +1,34 @@
 // src/slices/15_PaymentProcessor/PaymentProcessor.js
 
 import { handlePayment } from './processPaymentHandler';
+import { fetchLatestPaymentsFromReplay} from '../../eventStore/services/GetPaymentsProcessedFromES';
 
 export async function processPayments(paymentPlan) {
+  const { paymentPlanId, payments } = paymentPlan;
+
+  // Step 1: Fetch the latest payment plan ID from the DB
+  const { latestPaymentPlanId } = await fetchLatestPaymentsFromReplay();
+
+  if (paymentPlanId !== latestPaymentPlanId) {
+  throw new Error(
+    `Payment Plan selected (${paymentPlanId}) is out of date. Latest is (${latestPaymentPlanId}).`
+  );
+}
+
   const currentDate = new Date();
-  const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11, so we add 1
+  const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
   const currentYear = currentDate.getFullYear();
   const processedPayments = [];
 
-  console.log(`Starting to process payments for plan with current date: ${currentDate}`);
-   console.log(`Processing payment ***: ${paymentPlan}`);
+  console.log(`Starting to process payments for plan ID: ${paymentPlanId} on ${currentDate}`);
 
-  for (const [monthKey, details] of Object.entries(paymentPlan.payments)) {
+  for (const [monthKey, details] of Object.entries(payments)) {
     console.log(`Processing payment for month: ${monthKey}`);
 
-    // Correctly split month and year
     const parts = monthKey.split('-');
     if (parts.length !== 2) {
       console.error(`Invalid monthKey format: ${monthKey}`);
-      continue; // Skip processing of invalid entries
+      continue;
     }
 
     const paymentMonth = parseInt(parts[0], 10);
@@ -26,29 +36,25 @@ export async function processPayments(paymentPlan) {
 
     if (isNaN(paymentMonth) || isNaN(paymentYear)) {
       console.error(`Invalid month or year in monthKey: ${monthKey}`);
-      continue; // Skip processing of invalid entries
+      continue;
     }
 
-    console.log(`Parsed month: ${paymentMonth}, year: ${paymentYear}`);
-
-    // Check if the payment month is less than the current month and year
     if (
       paymentYear < currentYear ||
       (paymentYear === currentYear && paymentMonth < currentMonth)
     ) {
-      console.log(`Payment for ${monthKey} is due; processing payment...`);
+      console.log(`Payment for ${monthKey} is due; processing...`);
       const processedPayment = await handlePayment(details, monthKey);
       processedPayments.push(processedPayment);
-      console.log(`Successfully processed payment for month: ${monthKey}`);
+      console.log(`Successfully processed payment for ${monthKey}`);
     } else {
       console.log(`Payment for ${monthKey} is not due yet; skipping.`);
     }
   }
 
-  console.log(`Finished processing payments. Processed payments count: ${processedPayments.length}`);
+  console.log(`Finished processing. Total processed: ${processedPayments.length}`);
   return processedPayments;
 }
-
 
 
 

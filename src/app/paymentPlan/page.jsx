@@ -95,12 +95,16 @@ const handleProcessPayments = async () => {
     try {
       console.log('Processing Payments:', filteredPayments);
 
-      // Construct paymentPlan as expected by processPayments
+      const paymentPlanId = filteredPayments[0]?.paymentPlanId;
+      if (!paymentPlanId) {
+        throw new Error("Could not determine paymentPlanId from selected payments.");
+      }
+
       const paymentPlan = {
+        paymentPlanId,
         payments: filteredPayments.reduce((acc, payment) => {
-          // Assuming 'month' field contains the month and year in the format "MM-YYYY"
-          const monthKey = payment.month; // Ensure month field is in the expected format
-          acc[monthKey] = payment; // Structuring payment details by monthKey
+          const monthKey = payment.month;
+          acc[monthKey] = payment;
           return acc;
         }, {})
       };
@@ -119,6 +123,7 @@ const handleProcessPayments = async () => {
     alert('No payments available to process.');
   }
 };
+
 
 
   const handleRebuildProjection = async () => {

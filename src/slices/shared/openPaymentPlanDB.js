@@ -192,31 +192,19 @@ export const fetchLatestPayments = async () => {
     request.onsuccess = (event) => {
       const allPayments = event.target.result;
 
-      // Log all payments to verify the structure and field names
       console.log('All payments fetched:', allPayments);
 
-      // Filter payments based on status
+      // Always sort all payments to find the latest one, regardless of status
+      const allSorted = [...allPayments].sort((a, b) => b.timestamp - a.timestamp);
+      const latestPaymentPlanId = allSorted.length > 0 ? allSorted[0].paymentPlanId : null;
+
+      // Now filter for processed payments
       const filteredPayments = allPayments.filter(payment =>
         payment.status === 'PaymentProcessed'
-       );
+      );
 
-      if (filteredPayments.length === 0) {
-        console.log('No payments found with the specified statuses.');
-        resolve({ latestPaymentPlanId: null, payments: [] });
-        return;
-      }
-
-      // Log filtered payments to verify the status field
       console.log('Filtered payments:', filteredPayments);
-
-      // Sort payments by timestamp in descending order to find the latest
-      const sortedPayments = [...filteredPayments].sort((a, b) => b.timestamp - a.timestamp);
-      const latestPaymentPlanId = sortedPayments[0].paymentPlanId;
-
-      console.log('Fetched filtered payments with latest paymentPlanId:', {
-        latestPaymentPlanId,
-        payments: filteredPayments
-      });
+      console.log('Resolved latestPaymentPlanId:', latestPaymentPlanId);
 
       resolve({
         latestPaymentPlanId,
@@ -230,4 +218,5 @@ export const fetchLatestPayments = async () => {
     };
   });
 };
+
 

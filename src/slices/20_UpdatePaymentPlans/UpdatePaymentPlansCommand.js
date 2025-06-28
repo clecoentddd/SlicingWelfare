@@ -1,11 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
-import { replayPaymentProcessedEvents } from '../../eventStore/services/GetPaymentsProcessedFromES';
+import { fetchLatestPaymentsFromReplay } from '../../eventStore/services/GetPaymentsProcessedFromES';
 import { replayLatestCalculationFromEvents } from '../../eventStore/services/GetLatestCalculationPlanFromES'; 
 
 export async function updatePaymentPlansCommand(decisionId, calculationId, paymentPlanId) {
   try {
     // Retrieve the latest payment plan and payments from the database
-    const { latestPaymentPlanId, payments } = await replayPaymentProcessedEvents();
+    const { latestPaymentPlanId, payments } = await fetchLatestPaymentsFromReplay();
     console.log('Latest payment plan ID retrieved:', latestPaymentPlanId);
 
     // Retrieve the latest calculation plan and calculations from the database

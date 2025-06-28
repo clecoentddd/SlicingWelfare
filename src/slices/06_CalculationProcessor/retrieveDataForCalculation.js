@@ -20,8 +20,8 @@ export async function retrieveDataForCalculation(changeId, eventId) {
     allRows.sort((a, b) => b.timestamp - a.timestamp);
     allRows.sort((a, b) => b.month.localeCompare(a.month));
 
-    const filteredRows = filterRowsByChangeIdAndStatus(allRows, changeId, eventId);
-    console.log(`Filtered ${filteredRows.length} rows based on changeId and status.`);
+    const filteredRows = filterRowsByStatusPushed(allRows, eventId);
+    console.log(`Filtered ${filteredRows.length} rows based on status = pushed.`);
 
     const monthlyCalculations = calculateMonthlyBenefits(filteredRows);
     console.log('Monthly calculations:', monthlyCalculations);
@@ -52,6 +52,10 @@ export async function retrieveDataForCalculation(changeId, eventId) {
 
 function filterRowsByChangeIdAndStatus(rows, changeId, eventId) {
   return rows.filter(row => row.changeId === changeId && row.status === "Pushed" && row.EVENT_ID <= eventId);
+}
+
+function filterRowsByStatusPushed(rows, eventId) {
+  return rows.filter(row => row.status === "Pushed" && row.EVENT_ID <= eventId);
 }
 
 function calculateMonthlyBenefits(rows) {

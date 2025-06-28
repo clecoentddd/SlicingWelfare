@@ -2,56 +2,54 @@
 
 import { getAllEvents } from '../eventRepository.js';
 
-export async function replayPaymentProcessedEvents() {
-  console.log("[PaymentReplayService] Starting replay of PaymentPlanPrepared events to find latest payment plan ID.");
+export async function fetchLatestPaymentsFromReplay() {
+  console.log("[PaymentReplayService] Starting replay of payment plan events to find latest payment plan ID.");
 
   const allEvents = await getAllEvents();
   let latestPlanEvent = null;
   const payments = [];
 
-  // Filter for "PaymentPlanPrepared" events to get the latest paymentPlanId
-  const paymentPlanPreparedEvents = allEvents.filter(
-    event => event.type === "PaymentPlanPrepared"
+  // Include both original and replacement plan types
+  const planPreparedEvents = allEvents.filter(
+    event =>
+      event.type === "PaymentPlanPrepared" ||
+      event.type === "PaymentPlanPreparedInReplacement"
   );
 
-  console.log(`[PaymentReplayService] Found ${paymentPlanPreparedEvents.length} PaymentPlanPrepared events.`);
+  console.log(`[PaymentReplayService] Found ${planPreparedEvents.length} plan preparation events.`);
 
-  paymentPlanPreparedEvents.forEach(event => {
-    const timestamp = event.timestamp;
-
-    // Check if this event is the latest so far
-    if (!latestPlanEvent || new Date(timestamp) > new Date(latestPlanEvent.timestamp)) {
+  // Find the latest plan event based on timestamp
+  planPreparedEvents.forEach(event => {
+    if (!latestPlanEvent || new Date(event.timestamp) > new Date(latestPlanEvent.timestamp)) {
       latestPlanEvent = event;
     }
   });
 
-  console.log("[PaymentReplayService] Latest PaymentPlanPrepared event:", latestPlanEvent ? latestPlanEvent.paymentPlanId : "None");
+  console.log("[PaymentReplayService] Latest plan event:", latestPlanEvent ? latestPlanEvent.paymentPlanId : "None");
 
-  // Process PaymentProcessed events to get the list of payments
-  const paymentProcessedEvents = allEvents.filter(
-    event => event.type === "PaymentProcessed"
-  );
+  // Also gather all PaymentProcessed events
+  const paymentProcessedEvents = allEvents.filter(event => event.type === "PaymentProcessed");
 
   paymentProcessedEvents.forEach(event => {
     const { month, amount } = event.payload;
-
     if (month && typeof amount === 'number') {
       payments.push({
         month,
         amount,
-        status: 'PaymentProcessed' // Assuming the status for processed payments
+        status: 'PaymentProcessed',
+        paymentPlanId: event.paymentPlanId || null, // If available in the event
       });
     } else {
-      console.warn(`[PaymentReplayService] Skipping malformed PaymentProcessed event:`, event);
+      console.warn("[PaymentReplayService] Skipping malformed PaymentProcessed event:", event);
     }
   });
 
-  console.log("[PaymentReplayService] Replay complete. Total payments processed:", payments.length);
+  console.log("[PaymentReplayService] Replay complete. Total processed payments:", payments.length);
 
-  // Return in the format of { latestPaymentPlanId, payments }
   return {
     latestPaymentPlanId: latestPlanEvent ? latestPlanEvent.paymentPlanId : null,
-    payments: payments
+    payments
   };
 }
+
 
