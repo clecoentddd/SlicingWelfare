@@ -19,6 +19,6 @@ export const handleProcessedEventForProjection = async (event) => {
       console.error(`Failed to update payment with ID ${event.paymentId}.`);
     }
   } catch (error) {
-    console.error('Error handling PaymentProcessed event:', error);
+    console.error('Error handling TransactionProcessed event:', error);
   }
 };

@@ -11,13 +11,27 @@ export async function fetchCalculationIds() {
     if (!calculationsCache) {
       calculationsCache = await fetchCalculations();
     }
-    const ids = [...new Set(calculationsCache.map(calc => calc.calculationId))];
-    return ids;
+
+    const latestMap = new Map();
+
+    for (const calc of calculationsCache) {
+      const existing = latestMap.get(calc.calculationId);
+      if (!existing || calc.timestamp > existing.timestamp) {
+        latestMap.set(calc.calculationId, {
+          calculationId: calc.calculationId,
+          timestamp: calc.timestamp,
+        });
+      }
+    }
+
+    return Array.from(latestMap.values());
   } catch (err) {
     console.error("Failed to fetch calculation IDs:", err);
     return [];
   }
 }
+
+
 
 export async function fetchCalculationsByCalculationId(calculationId) {
   try {

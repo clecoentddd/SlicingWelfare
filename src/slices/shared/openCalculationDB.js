@@ -102,7 +102,7 @@ export async function fetchCalculations() {
   }
 }
 
-export async function fetchLatestCalculations() {
+export async function fetchLatestCalculationsFromProjectionDB() {
   console.log('Starting to fetch the latest calculations...');
 
   try {
@@ -142,7 +142,7 @@ export async function fetchLatestCalculations() {
       calculations: latestCalculationRecords
     };
   } catch (error) {
-    console.error('Error in fetchLatestCalculations:', error);
+    console.error('Error in fetchLatestCalculationsFromProjectionDB:', error);
     return { latestCalculationId: null, calculations: [] };
   }
 }

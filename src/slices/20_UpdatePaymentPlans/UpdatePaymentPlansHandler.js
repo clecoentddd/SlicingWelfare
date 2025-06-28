@@ -9,32 +9,40 @@ import { domainEventEmitter } from '../shared/eventEmitter';
 
 export async function UpdatePaymentPlansHandler(event) {
   try {
-
     console.log("UpdatePaymentPlansHandler: event received is", event);
 
-    const { paymentPlanId, calculationId, calculations } = event.payload;
+    const { paymentPlanId, calculationId } = event.payload;
     const decisionId = event.decisionId;
 
     console.log(`Processing payments for paymentPlanId: ${paymentPlanId} with decisionId: ${decisionId} based on calculationId: ${calculationId}`);
 
-    // Call the command to process payments and create events
-    const { paymentPlanReplacedEvent, paymentPlanPreparedEvent } = await updatePaymentPlansCommand(decisionId, calculationId, paymentPlanId);
+    // Safely destructure result
+    const result = await updatePaymentPlansCommand(decisionId, calculationId, paymentPlanId);
 
-    // Append the PaymentPlanReplaced event
-    await appendEvent(paymentPlanReplacedEvent);
+    const paymentPlanReplacedEvent = result?.paymentPlanReplacedEvent;
+    const paymentPlanPreparedEvent = result?.paymentPlanPreparedEvent;
 
-    // Append the PaymentPlanPrepared event
-    await appendEvent(paymentPlanPreparedEvent);
-      console.log('Payment plan events stored successfully.');
+    // If both are null, no events to handle
+    if (!paymentPlanReplacedEvent && !paymentPlanPreparedEvent) {
+      console.log("✅ No payment plan events to emit. Skipping.");
+      return;
+    }
 
-    // Publish domain event for projection
-    domainEventEmitter.publish('PaymentPlanPreparedInReplacement', paymentPlanPreparedEvent);
-    console.log('UpdatePaymentPlansHandler: Published domain event PaymentPlanPreparedInReplacement');
-    
+    // Proceed only if both events exist (or you can handle partials if needed)
+    if (paymentPlanReplacedEvent) {
+      await appendEvent(paymentPlanReplacedEvent);
+    }
 
+    if (paymentPlanPreparedEvent) {
+      await appendEvent(paymentPlanPreparedEvent);
+      domainEventEmitter.publish('PaymentPlanPreparedInReplacement', paymentPlanPreparedEvent);
+      console.log('✅ Domain event PaymentPlanPreparedInReplacement published');
+    }
+
+    console.log('✅ Payment plan update events handled successfully.');
 
   } catch (error) {
-    console.error("Error in changeStateHandler:", error);
+    console.error("❌ Error in UpdatePaymentPlansHandler:", error);
     throw error;
   }
 }

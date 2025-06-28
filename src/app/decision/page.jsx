@@ -1,41 +1,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchCalculationIds, fetchCalculationsByCalculationId, fetchAndSortDecisionsByCalculationId } from "../../slices/08_DecisionsInformation/DecisionsReadModel";
-import { validationDecisionHandler } from "../../slices/09_DecisionValidation/validationDecisionHandler";
+import {
+  fetchCalculationIds,
+  fetchCalculationsByCalculationId,
+  fetchAndSortDecisionsByCalculationId,
+} from '../../slices/08_DecisionsInformation/DecisionsReadModel';
+import { validationDecisionHandler } from '../../slices/09_DecisionValidation/validationDecisionHandler';
 import Navbar from '../../../components/Navbar';
 import styles from './decision.module.css';
 
-interface Calculation {
-  id: string;
-  calculationId: string;
-  changeId: string;
-  month: string;
-  type: string;
-  incomes: number;
-  expenses: number;
-  netAmount: number;
-  timestamp: number;
-}
-
-interface Decision {
-  decisionId: string;
-  calculationId: string;
-  changeId: string;
-  status: string;
-  timestamp: number;
-}
-
 export default function DecisionViewPage() {
-  const [calculationIds, setCalculationIds] = useState<string[]>([]);
+  const [calculationIds, setCalculationIds] = useState([]);
   const [selectedCalculationId, setSelectedCalculationId] = useState('');
-  const [calculations, setCalculations] = useState<Calculation[]>([]);
-  const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [calculations, setCalculations] = useState([]);
+  const [decisions, setDecisions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    fetchCalculationIds().then(ids => {
-      setCalculationIds(ids);
+    fetchCalculationIds().then((ids) => {
+      setCalculationIds(ids); // expects: [{ calculationId, timestamp }]
     });
   }, []);
 
@@ -44,7 +28,7 @@ export default function DecisionViewPage() {
       setIsLoading(true);
       Promise.all([
         fetchCalculationsByCalculationId(selectedCalculationId),
-        fetchAndSortDecisionsByCalculationId(selectedCalculationId)
+        fetchAndSortDecisionsByCalculationId(selectedCalculationId),
       ]).then(([calculationsResult, decisionsResult]) => {
         setCalculations(calculationsResult);
         setDecisions(decisionsResult);
@@ -64,11 +48,10 @@ export default function DecisionViewPage() {
       await validationDecisionHandler(selectedCalculationId, changeId);
       alert('Decision validated successfully!');
 
-      // Refresh decisions after validation
       const updatedDecisions = await fetchAndSortDecisionsByCalculationId(selectedCalculationId);
       setDecisions(updatedDecisions);
     } catch (error) {
-      console.error("Error validating decision:", error);
+      console.error('Error validating decision:', error);
       alert('Failed to validate decision');
     }
   };
@@ -85,14 +68,25 @@ export default function DecisionViewPage() {
             className={styles.select}
           >
             <option value="">Select Calculation ID</option>
-            {calculationIds.map((id, index) => (
-              <option key={index} value={id}>{id}</option>
-            ))}
+            {calculationIds
+  .filter(entry => entry.timestamp !== undefined && entry.timestamp !== null)
+  .sort((a, b) => b.timestamp - a.timestamp)
+  .map((entry, index) => {
+    const date = new Date(Number(entry.timestamp));
+    const displayDate = isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleString();
+    return (
+      <option key={index} value={entry.calculationId}>
+        {entry.calculationId} ({displayDate})
+      </option>
+    );
+  })}
+
           </select>
           <button onClick={handleValidateDecision} className={styles.validateButton}>
             Validate Decision
           </button>
         </div>
+
         {isLoading ? (
           <div className={styles.loading}>Loading...</div>
         ) : (
@@ -124,6 +118,7 @@ export default function DecisionViewPage() {
                 </tbody>
               </table>
             </div>
+
             <div className={styles.tableContainer}>
               <h2>Decisions</h2>
               <table className={styles.table}>

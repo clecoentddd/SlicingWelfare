@@ -174,7 +174,7 @@ export const clearPaymentPlansDB = async () => {
   });
 };
 
-export const fetchLatestPayments = async () => {
+export const fetchLatestPaymentsFromProjectionDB = async () => {
   let db;
   try {
     db = await openPaymentPlanDB();
@@ -199,9 +199,10 @@ export const fetchLatestPayments = async () => {
       const latestPaymentPlanId = allSorted.length > 0 ? allSorted[0].paymentPlanId : null;
 
       // Now filter for processed payments
-      const filteredPayments = allPayments.filter(payment =>
-        payment.status === 'PaymentProcessed'
-      );
+      const filteredPayments = allPayments
+      .filter(payment =>
+        payment.status === 'TransactionProcessed' 
+        );
 
       console.log('Filtered payments:', filteredPayments);
       console.log('Resolved latestPaymentPlanId:', latestPaymentPlanId);

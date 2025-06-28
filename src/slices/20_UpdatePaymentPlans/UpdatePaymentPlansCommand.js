@@ -1,12 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
-import { fetchLatestPaymentsFromReplay } from '../../eventStore/services/GetPaymentsProcessedFromES';
+import { fetchProcessedTransactionsFromEventStore } from '../../eventStore/services/GetPaymentsProcessedFromES';
 import { replayLatestCalculationFromEvents } from '../../eventStore/services/GetLatestCalculationPlanFromES'; 
 
 export async function updatePaymentPlansCommand(decisionId, calculationId, paymentPlanId) {
   try {
-    // Retrieve the latest payment plan and payments from the database
-    const { latestPaymentPlanId, payments } = await fetchLatestPaymentsFromReplay();
-    console.log('Latest payment plan ID retrieved:', latestPaymentPlanId);
+    // Retrieve the latest payment plan and payments from the event store
+    const { latestPaymentPlanId, rawTransactions: payments } = await fetchProcessedTransactionsFromEventStore();console.log('Latest payment plan ID retrieved:', latestPaymentPlanId);
 
     // Retrieve the latest calculation plan and calculations from the database
     const { latestCalculationId, calculations } = await replayLatestCalculationFromEvents();
@@ -40,6 +39,14 @@ export async function updatePaymentPlansCommand(decisionId, calculationId, payme
       { payments },
       latestPaymentPlanId
     );
+
+    if (!processedData) {
+      console.log("✅ No payment plan update required — everything is already settled.");
+      return {
+        paymentPlanReplacedEvent: null,
+        paymentPlanPreparedEvent: null
+      };
+    }
 
     // Generate the payment payloads
     const paymentPayloads = generatePaymentPayloads(processedData);
@@ -88,21 +95,12 @@ export async function updatePaymentPlansCommand(decisionId, calculationId, payme
 }
 
 
-function processCalculationAndPaymentData({ calculations }, { payments }, latestPaymentPlanId) {
+export function processCalculationAndPaymentData({ calculations }, { payments }, latestPaymentPlanId) {
   console.log('Creating calculation map by month...');
-
-  // Log the initial calculations data
-  console.log('Initial Calculations Data:', calculations);
 
   const calculationMap = new Map();
   calculations.forEach(calc => {
     const calculationAmount = calc.netAmount || 0;
-    console.log(`Calculation for month ${calc.month}:`, {
-      netAmount: calc.netAmount,
-      calculationAmount,
-      calculationId: calc.calculationId
-    });
-
     calculationMap.set(calc.month, {
       calculationAmount,
       calculationId: calc.calculationId,
@@ -120,38 +118,20 @@ function processCalculationAndPaymentData({ calculations }, { payments }, latest
 
   const allMonths = new Set([...calculationMap.keys(), ...paymentMap.keys()]);
 
-  // Log all the months being processed
-  console.log('All Months to Process:', Array.from(allMonths));
-
-  return Array.from(allMonths).map(month => {
+  const processedMonths = Array.from(allMonths).map(month => {
     const calcData = calculationMap.get(month) || { calculationAmount: 0, calculationId: null };
     const paymentInfo = paymentMap.get(month) || { amount: 0, status: 'NothingToDo' };
 
-    console.log(`Processing month: ${month}, Calculation Data:`, calcData);
+    let newAmount, amountAlreadyProcessed;
 
-    let newAmount;
-    let amountAlreadyProcessed;
-
-    if (paymentInfo.status === 'PaymentProcessed') {
+    if (paymentInfo.status === 'TransactionProcessed') {
       newAmount = calcData.calculationAmount - paymentInfo.amount;
       amountAlreadyProcessed = paymentInfo.amount;
-      console.log(`PaymentProcessed for month ${month}:`, {
-        calculationAmount: calcData.calculationAmount,
-        paymentAmount: paymentInfo.amount,
-        newAmount,
-        amountAlreadyProcessed
-      });
     } else {
       newAmount = calcData.calculationAmount;
       amountAlreadyProcessed = 0;
-      console.log(`No PaymentProcessed for month ${month}:`, {
-        calculationAmount: calcData.calculationAmount,
-        newAmount,
-        amountAlreadyProcessed
-      });
     }
 
-    // Determine the status based on the newAmount
     let status;
     if (newAmount < 0) {
       status = "ReimbursementToProcess";
@@ -171,7 +151,17 @@ function processCalculationAndPaymentData({ calculations }, { payments }, latest
       status
     };
   });
+
+  const hasAnyToProcess = processedMonths.some(m => m.status !== "NoPaymentToProcess");
+
+  if (!hasAnyToProcess) {
+    console.log("✅ No payments or reimbursements to process. Skipping payment plan creation.");
+    return null; // signal to skip
+  }
+
+  return processedMonths;
 }
+
 
 
 function generatePaymentPayloads(processedData) {

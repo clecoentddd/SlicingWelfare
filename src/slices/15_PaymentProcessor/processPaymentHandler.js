@@ -11,7 +11,8 @@ export async function handlePayment(paymentDetails, month) {
   await appendEvent(paymentEvent);
 
   // Publish the domain event
-  domainEventEmitter.publish('PaymentProcessed', paymentEvent);
+  console.log ("handlePayment - Publish domain event: ", paymentEvent.type, paymentEvent);
+  domainEventEmitter.publish(paymentEvent.type, paymentEvent);
 
   return paymentEvent;
 }

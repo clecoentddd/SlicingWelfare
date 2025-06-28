@@ -60,8 +60,8 @@ const PaymentPlanUI = () => {
         return paymentDate === selectedTimestamp;
       });
 
-      // Filter payments by status "PaymentToProcess" or "PaymentProcessed"
-      const acceptableStatuses = ['PaymentToProcess', 'PaymentProcessed', 'ReimbursementToProcess'];
+      // Filter payments by status "PaymentToProcess" or "TransactionProcessed"
+      const acceptableStatuses = ['PaymentToProcess', 'TransactionProcessed', 'ReimbursementToProcess', 'ReimbursementToProcess'];
       const filteredByStatus = filtered.filter(payment => acceptableStatuses.includes(payment.status));
 
       // Sort payments by month and year in descending order
@@ -114,7 +114,7 @@ const handleProcessPayments = async () => {
       const processedPayments = await processPayments(paymentPlan);
       console.log('Processed Payments:', processedPayments);
       alert(`Processed ${processedPayments.length} payments.`);
-      window.location.reload();
+      // window.location.reload();
     } catch (error) {
       console.error('Error processing payments:', error);
       alert("Error processing payments. Please check the console for details.");
