@@ -5,9 +5,7 @@ export async function handleToBeProcessedEventForProjection(event) {
 
   let db;
   try {
-    console.log('Attempting to open database...');
     db = await openPaymentPlanDB();
-    console.log('Database opened successfully.');
   } catch (error) {
     console.error('Failed to open database:', error);
     return;
@@ -20,11 +18,11 @@ export async function handleToBeProcessedEventForProjection(event) {
     switch (event.type) {
       case "PaymentPlanPrepared": 
       case "PaymentPlanPreparedInReplacement":
-        console.log('Processing PaymentPlanPrepared event.');
+        console.log('Processing PaymentPlanPrepared event.', event.type);
 
         // Iterate over each month in the payload
         const payments = Object.entries(event.payload.payments).map(([month, details]) => {
-          console.log(`Processing payment for month: ${month}`);
+          console.log(`Processing payment to process for month: ${details.month} ${details.paymentId} ${details.amount}`);
           return {
             paymentPlanId: event.paymentPlanId,
             decisionId: event.decisionId,
@@ -38,7 +36,6 @@ export async function handleToBeProcessedEventForProjection(event) {
           };
         });
 
-        console.log('Storing each payment as a separate record...');
         // Store each payment as a separate record
         for (const payment of payments) {
           console.log(`Storing payment with ID: ${payment.paymentId}`);

@@ -96,7 +96,7 @@ export async function updatePaymentPlansCommand(decisionId, calculationId, payme
 
 
 export function processCalculationAndPaymentData({ calculations }, { payments }, latestPaymentPlanId) {
-  console.log('Creating calculation map by month...');
+  console.log('🔍 Creating calculation map by month...');
 
   const calculationMap = new Map();
   calculations.forEach(calc => {
@@ -107,30 +107,24 @@ export function processCalculationAndPaymentData({ calculations }, { payments },
     });
   });
 
-  console.log('Creating payment map by month...');
+  console.log('🔍 Creating payment map by month (only TransactionProcessed)...');
   const paymentMap = new Map();
-  payments.forEach(payment => {
-    paymentMap.set(payment.month, {
-      amount: payment.amount,
-      status: payment.status,
+
+  payments
+    .filter(p => p.status === 'TransactionProcessed')
+    .forEach(payment => {
+      const existing = paymentMap.get(payment.month) || 0;
+      paymentMap.set(payment.month, existing + payment.amount);
     });
-  });
 
   const allMonths = new Set([...calculationMap.keys(), ...paymentMap.keys()]);
 
   const processedMonths = Array.from(allMonths).map(month => {
     const calcData = calculationMap.get(month) || { calculationAmount: 0, calculationId: null };
-    const paymentInfo = paymentMap.get(month) || { amount: 0, status: 'NothingToDo' };
+    const amountAlreadyProcessed = paymentMap.get(month) || 0;
+    const newAmount = calcData.calculationAmount - amountAlreadyProcessed;
 
-    let newAmount, amountAlreadyProcessed;
-
-    if (paymentInfo.status === 'TransactionProcessed') {
-      newAmount = calcData.calculationAmount - paymentInfo.amount;
-      amountAlreadyProcessed = paymentInfo.amount;
-    } else {
-      newAmount = calcData.calculationAmount;
-      amountAlreadyProcessed = 0;
-    }
+    console.log(`📆 ${month}: expected ${calcData.calculationAmount}, paid ${amountAlreadyProcessed} → remaining ${newAmount}`);
 
     let status;
     if (newAmount < 0) {
@@ -161,6 +155,7 @@ export function processCalculationAndPaymentData({ calculations }, { payments },
 
   return processedMonths;
 }
+
 
 
 
