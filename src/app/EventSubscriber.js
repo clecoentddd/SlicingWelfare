@@ -10,6 +10,8 @@ import { subscribeToIntegrationEventDecisionWithExisintPayementPlanApproved } fr
 import { subscribePaymentPlanPreparedInReplacement } from '../slices/21_projectUpdatedPaymentPlan/subScribeToUpdatedPaymentPlan';
 import {subscribeToDomainEventDataPushed} from '../slices/05_updateChangesToPushedInProjection/subscribeToDomainEventDataPushed'
 import {subscribeToDomainEventDataCancelled} from '../slices/23_UpateResourcesProjectionWithCancellingCommittedEntries/subscribeToDomainEventDataCancelled';
+import { subscribeBigBook } from '../slices/24_TheBigBook/BigBookSubscriber.js';
+import { subscribeToDomainEventNewDecisionWithPayments } from '../slices/10_DecisionProjection/subscriberToDecision';
 
 export default function EventSubscriber() {
   useEffect(() => {
@@ -35,11 +37,16 @@ export default function EventSubscriber() {
     // Subscribe to domain events
     subscribeToTransactionProcessed();
 
+    // Decisions with payments, no payment exists
+    subscribeToDomainEventNewDecisionWithPayments();
+
     // Subscribe to decision projection with existing payment plan
     subscribeToDecisionProjectionWithExisintPaymentPlan();
 
     // Projection subscription for new payment plan when there is an existing payment plan
     subscribePaymentPlanPreparedInReplacement();
+
+    subscribeBigBook();
 
     console.log('Subscribed to all necessary events.');
   }, []);

@@ -114,7 +114,7 @@ const handleProcessPayments = async () => {
       const processedPayments = await processPayments(paymentPlan);
       console.log('Processed Payments:', processedPayments);
       alert(`Processed ${processedPayments.length} payments.`);
-      window.location.reload();
+      // window.location.reload();
     } catch (error) {
       console.error('Error processing payments:', error);
       alert("Error processing payments. Please check the console for details.");

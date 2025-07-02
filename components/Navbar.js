@@ -60,6 +60,13 @@ export default function Navbar() {
           Payment Plan
         </Link>
         <Link
+          href="/ledger"
+          className={`${styles.navLink} ${activeLink === 'ledger' ? styles.loading : ''}`}
+          onClick={() => handleLinkClick('ledger')}
+        >
+          Ledger
+        </Link>
+        <Link
           href="/monitoring"
           className={`${styles.navLink} ${activeLink === 'monitoring' ? styles.loading : ''}`}
           onClick={() => handleLinkClick('monitoring')}
