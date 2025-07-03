@@ -43,9 +43,13 @@ export default function DecisionViewPage() {
       return;
     }
 
+    if (decisions.length > 0) {
+      alert('A decision already exists for this calculation. Validation is not allowed.');
+      return;
+    }
+
     try {
-      const changeId = decisions.length > 0 ? decisions[0].changeId : '';
-      await validationDecisionHandler(selectedCalculationId, changeId);
+      await validationDecisionHandler(selectedCalculationId, '');
       alert('Decision validated successfully!');
 
       const updatedDecisions = await fetchAndSortDecisionsByCalculationId(selectedCalculationId);
@@ -69,23 +73,31 @@ export default function DecisionViewPage() {
           >
             <option value="">Select Calculation ID</option>
             {calculationIds
-  .filter(entry => entry.timestamp !== undefined && entry.timestamp !== null)
-  .sort((a, b) => b.timestamp - a.timestamp)
-  .map((entry, index) => {
-    const date = new Date(Number(entry.timestamp));
-    const displayDate = isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleString();
-    return (
-      <option key={index} value={entry.calculationId}>
-        {entry.calculationId} ({displayDate})
-      </option>
-    );
-  })}
-
+              .filter(entry => entry.timestamp !== undefined && entry.timestamp !== null)
+              .sort((a, b) => b.timestamp - a.timestamp)
+              .map((entry, index) => {
+                const date = new Date(Number(entry.timestamp));
+                const displayDate = isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleString();
+                return (
+                  <option key={index} value={entry.calculationId}>
+                    {entry.calculationId} ({displayDate})
+                  </option>
+                );
+              })}
           </select>
-          <button onClick={handleValidateDecision} className={styles.validateButton}>
+          <button
+            onClick={handleValidateDecision}
+            className={`${styles.validateButton} ${decisions.length > 0 ? styles.disabledButton : ''}`}
+            disabled={decisions.length > 0}
+          >
             Validate Decision
           </button>
-        </div>
+          {decisions.length > 0 && (
+            <p className={styles.warningText}>
+              A decision already exists for this calculation. You cannot validate again.
+            </p>
+          )}
+         </div>
 
         {isLoading ? (
           <div className={styles.loading}>Loading...</div>
